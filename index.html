@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>净值追踪 · 鹿桃记账</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+  :root{
+    --bg:#EFE6D8; --card:#FBF7EF; --card-soft:#F3EBDC; --ink:#3B2E22; --ink-soft:#7A6A56;
+    --ink-faint:#9C8A73; --wood:#7A5230; --wood-dark:#5C3D22; --clay:#B75E37; --clay-light:#F0DDCE;
+    --sage:#6F7D52; --sage-light:#E7EDDC; --rust:#A2543A; --rust-light:#F3E0D6; --gold:#B98B3E;
+    --gold-light:#F5E8CC; --border:#DDCEB2;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--ink);}
+  .wrap{max-width:920px;margin:0 auto;padding:20px 20px 100px;}
+  .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:16px;margin-bottom:8px;}
+  .tab{padding:8px 14px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--ink-soft);white-space:nowrap;}
+  .tab.active{border-color:var(--wood);background:var(--wood);color:#fff;font-weight:600;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+  .card.flat{border:none;}
+  .row-between{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .section-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+  .title{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:700;color:var(--ink);}
+  .subtitle{font-size:13px;color:var(--ink-soft);margin-top:2px;}
+  .muted{color:var(--ink-faint);font-size:13px;}
+  .btn-primary{background:var(--wood);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500;}
+  .btn-primary:active{transform:scale(0.98);}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;}
+  .icon-btn{background:#fff;border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:13px;cursor:pointer;}
+  .form-card{background:var(--card-soft);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;}
+  .field{display:flex;flex-direction:column;font-size:12px;color:var(--ink-soft);gap:4px;}
+  .field.checkbox{flex-direction:row;align-items:center;gap:8px;}
+  .field input, .field select{border:1px solid var(--border);background:#fff;border-radius:8px;padding:8px 10px;font-size:14px;color:var(--ink);width:100%;}
+  .form-actions{display:flex;gap:8px;margin-top:12px;}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:12px;color:var(--ink-soft);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--border);}
+  td{padding:8px;font-size:13px;border-bottom:1px solid var(--border);}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0;}
+  .stat{border-radius:12px;padding:14px 16px;}
+  .stat-label{font-size:12px;color:var(--ink-soft);}
+  .stat-value{font-size:22px;font-weight:700;}
+  .two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;}
+  .calibrate-input{width:90px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;}
+  .loading{padding:60px 20px;text-align:center;color:var(--ink-soft);}
+  .ring-wrap{position:relative;width:180px;height:180px;flex-shrink:0;}
+  .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+</style>
+</head>
+<body>
+<div id="root"><div class="loading">加载中...</div></div>
+
+<script>
+/* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+/* ================================================== */
+
+const sb = (SUPABASE_URL.startsWith("http")) ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const fmt = n => Math.round(n || 0).toLocaleString("zh-CN");
+const todayStr = () => new Date().toISOString().slice(0,10);
+function addMonths(date, n){ const d = new Date(date); d.setMonth(d.getMonth()+n); return d; }
+function countPeriodsPassed(baseDateStr, dueDay, today){
+  const base = new Date(baseDateStr);
+  let d = new Date(base.getFullYear(), base.getMonth(), dueDay || 1);
+  if (d <= base) d = addMonths(d, 1);
+  let k = 0;
+  while (d <= today) { k++; d = addMonths(d, 1); }
+  return k;
+}
+function computeRemaining(item, today){
+  if (item.status === "paid") return 0;
+  const P0 = Number(item.basePrincipal) || 0;
+  const n = Math.max(0, Number(item.remainingTermsAtBase) || 0);
+  const A = Number(item.monthlyPayment) || 0;
+  const rate = Number(item.rate) || 0;
+  const r = rate/100/12;
+  let k = countPeriodsPassed(item.baseDate, item.dueDay, today);
+  k = Math.min(k, n);
+  if (n <= 0) return Math.max(0, P0);
+  let balance;
+  if (item.method === "interest_free" || r === 0) balance = P0 - (P0/n)*k;
+  else if (item.method === "equal_principal") balance = P0 - (P0/n)*k;
+  else balance = P0*Math.pow(1+r,k) - (A*(Math.pow(1+r,k)-1))/r;
+  return Math.max(0, Math.round(balance));
+}
+function daysUntilNext(monthDay){
+  if (!monthDay) return null;
+  const [m,d] = monthDay.split("-").map(Number);
+  const now = new Date();
+  let next = new Date(now.getFullYear(), m-1, d);
+  if (next < now) next = new Date(now.getFullYear()+1, m-1, d);
+  return Math.ceil((next-now)/86400000);
+}
+
+function impliedMonthlyRate(P0, A, n){
+  if (!(n>0) || !(P0>0) || !(A>0)) return null;
+  const f = (r) => r===0 ? A*n - P0 : A*(1-Math.pow(1+r,-n))/r - P0;
+  if (f(0) < 0) return null; // 月供总额小于本金,数值不合理
+  let lo = 0, hi = 0.05; // 月利率上限5%(年化约60%),覆盖绝大多数场景
+  for (let i=0; i<100; i++){
+    const mid = (lo+hi)/2;
+    const fm = f(mid);
+    if (Math.abs(fm) < 1e-6) return mid;
+    if (fm > 0) lo = mid; else hi = mid;
+  }
+  return (lo+hi)/2;
+}
+  {value:"equal_installment", label:"等额本息"},
+  {value:"equal_principal", label:"等额本金"},
+  {value:"interest_free", label:"无息分期"},
+];
+const LOAN_SCHEMA = [
+  {key:"name", label:"名称", type:"text", placeholder:"如:农信社"},
+  {key:"basePrincipal", label:"基准剩余本金(元)", type:"number"},
+  {key:"baseDate", label:"基准确认日期", type:"date"},
+  {key:"rate", label:"年利率(%)", type:"number", step:"0.01", solvable:true},
+  {key:"method", label:"还款方式", type:"select", options:METHOD_OPTIONS},
+  {key:"monthlyPayment", label:"月供(元)", type:"number"},
+  {key:"dueDay", label:"还款日(几号)", type:"number"},
+  {key:"remainingTermsAtBase", label:"基准日剩余期数", type:"number"},
+  {key:"note", label:"备注", type:"text"},
+];
+const INSTALLMENT_SCHEMA = [
+  {key:"label", label:"分期说明", type:"text", placeholder:"如:第9笔"},
+  {key:"basePrincipal", label:"基准剩余本金(元)", type:"number"},
+  {key:"baseDate", label:"基准确认日期", type:"date"},
+  {key:"rate", label:"年利率(%)", type:"number", step:"0.01", solvable:true},
+  {key:"method", label:"还款方式", type:"select", options:METHOD_OPTIONS},
+  {key:"monthlyPayment", label:"月还款(元)", type:"number"},
+  {key:"remainingTermsAtBase", label:"基准日剩余期数", type:"number"},
+];
+const CARD_SCHEMA = [
+  {key:"name", label:"银行/平台", type:"text"},
+  {key:"totalLimit", label:"总额度(元)", type:"number"},
+  {key:"currentBillManual", label:"当期账单/未分期欠款(元)", type:"number"},
+  {key:"dueDay", label:"还款日(几号)", type:"number"},
+  {key:"note", label:"备注", type:"text"},
+];
+const ASSET_SCHEMA = [
+  {key:"name", label:"名称", type:"text", placeholder:"如:招行活期"},
+  {key:"category", label:"类别", type:"select", options:[
+    {value:"cash", label:"现金/存款"}, {value:"fixed", label:"固定资产"}, {value:"invest", label:"投资"},
+  ]},
+  {key:"currentValue", label:"当前价值(元)", type:"number"},
+  {key:"lastUpdated", label:"更新日期", type:"date"},
+  {key:"note", label:"备注", type:"text"},
+];
+const INCOME_SCHEMA = [
+  {key:"name", label:"收入来源", type:"text", placeholder:"如:工资、房租"},
+  {key:"amount", label:"金额(元)", type:"number"},
+  {key:"frequency", label:"频率", type:"select", options:[
+    {value:"monthly", label:"每月"}, {value:"annual", label:"每年"},
+  ]},
+  {key:"note", label:"备注", type:"text"},
+];
+const INSURANCE_SCHEMA = [
+  {key:"name", label:"保单名称", type:"text", placeholder:"如:XX重疾险"},
+  {key:"type", label:"类型", type:"select", options:[
+    {value:"consumption", label:"消费型(无现金价值)"}, {value:"savings", label:"储蓄/年金型(有现金价值)"},
+  ]},
+  {key:"coverageAmount", label:"保额(元)", type:"number"},
+  {key:"annualPremium", label:"年缴保费(元)", type:"number"},
+  {key:"paymentDate", label:"缴费日(月-日)", type:"text", placeholder:"如:03-15"},
+  {key:"status", label:"状态", type:"select", options:[
+    {value:"active", label:"生效中"}, {value:"ended", label:"已终止"},
+  ]},
+  {key:"cashValue", label:"当前现金价值(元)", type:"number", showIf:v=>v.type==="savings"},
+  {key:"includeInNetWorth", label:"计入净值总览", type:"checkbox", showIf:v=>v.type==="savings"},
+];
+
+function seedData(){
+  const bd = "2026-07-22";
+  return {
+    familyMembers: ["小桃", "小饼"],
+    loans: [
+      {id:"l1", name:"农信社", basePrincipal:40000, baseDate:bd, rate:7.2, method:"equal_installment", monthlyPayment:248, dueDay:21, remainingTermsAtBase:12, status:"active", note:"到期约2027.7.15", owner:"共同"},
+      {id:"l2", name:"建行贷款1", basePrincipal:57150, baseDate:bd, rate:5.4, method:"equal_installment", monthlyPayment:6350, dueDay:25, remainingTermsAtBase:9, status:"active", note:"到期约2027.4", owner:"共同"},
+      {id:"l3", name:"建行贷款2", basePrincipal:85228, baseDate:bd, rate:5.5, method:"equal_installment", monthlyPayment:1937, dueDay:25, remainingTermsAtBase:44, status:"active", note:"到期约2030.3", owner:"共同"},
+      {id:"l4", name:"工商银行", basePrincipal:107040, baseDate:bd, rate:5.6, method:"equal_installment", monthlyPayment:2973, dueDay:6, remainingTermsAtBase:36, status:"active", note:"到期约2029.7", owner:"共同"},
+      {id:"l5", name:"南银法巴(旧)", basePrincipal:151625, baseDate:bd, rate:12, method:"equal_installment", monthlyPayment:5267, dueDay:10, remainingTermsAtBase:33, status:"active", note:"到期约2029.4", owner:"共同"},
+      {id:"l6", name:"南银法巴(新)", basePrincipal:206622, baseDate:bd, rate:14, method:"equal_installment", monthlyPayment:3444, dueDay:25, remainingTermsAtBase:60, status:"active", note:"还款日待定,到期约2031.7", owner:"共同"},
+    ],
+    cards: [
+      {id:"c1", name:"中信银行", totalLimit:100000, currentBillManual:74614, dueDay:3, note:"9笔分期,暂未拆分明细", owner:"共同", installments:[]},
+      {id:"c2", name:"浦发银行", totalLimit:149000, currentBillManual:0, dueDay:10, note:"分期明细来自V2.3,建议核对", owner:"共同", installments:[
+        {id:"p1", label:"第1笔", basePrincipal:6571, baseDate:bd, rate:10.06, method:"equal_installment", monthlyPayment:219, remainingTermsAtBase:30},
+        {id:"p4", label:"第4笔", basePrincipal:1623, baseDate:bd, rate:14.24, method:"equal_installment", monthlyPayment:116, remainingTermsAtBase:14},
+        {id:"p5", label:"第5笔", basePrincipal:2005, baseDate:bd, rate:14.61, method:"equal_installment", monthlyPayment:51, remainingTermsAtBase:39},
+        {id:"p7", label:"第7笔", basePrincipal:9962, baseDate:bd, rate:7.66, method:"equal_installment", monthlyPayment:172, remainingTermsAtBase:58},
+        {id:"p8", label:"第8笔", basePrincipal:37384, baseDate:bd, rate:7.66, method:"equal_installment", monthlyPayment:645, remainingTermsAtBase:58},
+        {id:"p9", label:"第9笔", basePrincipal:74440, baseDate:bd, rate:11.49, method:"equal_installment", monthlyPayment:1637, remainingTermsAtBase:60},
+      ]},
+      {id:"c3", name:"交通银行", totalLimit:12000, currentBillManual:8287, dueDay:15, note:"5笔分期+未出账单", owner:"共同", installments:[]},
+      {id:"c4", name:"民生银行", totalLimit:20000, currentBillManual:3479, dueDay:7, note:"1笔无息分期", owner:"共同", installments:[]},
+      {id:"c5", name:"建行信用卡", totalLimit:20000, currentBillManual:2405, dueDay:25, note:"本期账单", owner:"共同", installments:[]},
+      {id:"c6", name:"支付宝花呗", totalLimit:34000, currentBillManual:0, dueDay:20, note:"本期已还 ✅", owner:"共同", installments:[]},
+    ],
+    assets: [],
+    insurance: [],
+    income: [],
+    history: [],
+  };
+}
+
+const App = {
+  data: null,
+  tab: "dashboard",
+  expandedCard: null,
+  ownerFilter: "全部",
+  currentUser: null, // 存在浏览器本地,不同步到Supabase,只影响默认视图与编辑权限提示
+  aiAdvice: null,
+  aiLoading: false,
+  openForm: null, // {kind:'loan'|'card'|'installment'|'asset'|'insurance'|'income', mode:'add'|'edit', id, cardId, schema, values}
+  chart: null,
+
+  async init(){
+    if (sb){
+      try {
+        const { data: rows, error } = await sb.from("wealth_data").select("*").eq("id", 1).maybeSingle();
+        if (error) throw error;
+        if (rows && rows.payload) this.data = rows.payload;
+        else { this.data = seedData(); await this.persist(); }
+      } catch(e){
+        console.error("Supabase 读取失败,使用本地默认数据", e);
+        this.data = seedData();
+      }
+    } else {
+      this.data = seedData();
+    }
+    if (!this.data.income) this.data.income = [];
+    try {
+      const savedUser = localStorage.getItem("wealth-current-user");
+      if (savedUser && this.data.familyMembers.includes(savedUser)) {
+        this.currentUser = savedUser;
+        this.ownerFilter = savedUser;
+      }
+    } catch(e){}
+    this.render();
+  },
+
+  setCurrentUser(name){
+    this.currentUser = name;
+    this.ownerFilter = name;
+    try { localStorage.setItem("wealth-current-user", name); } catch(e){}
+    this.render();
+  },
+
+  ownerEmoji(owner){
+    const idx = this.data.familyMembers.indexOf(owner);
+    if (idx === 0) return "🍑";
+    if (idx === 1) return "🍪";
+    return "🤝";
+  },
+
+  canEdit(item){
+    if (!this.currentUser) return true;
+    const owner = (item && item.owner) || "共同";
+    return owner === this.currentUser || owner === "共同";
+  },
+
+  async persist(){
+    if (!sb) return;
+    try {
+      await sb.from("wealth_data").upsert({ id:1, payload:this.data, updated_at:new Date().toISOString() });
+    } catch(e){ console.error("保存失败", e); }
+  },
+
+  setTab(t){ this.tab = t; this.openForm=null; this.render(); },
+
+  totals(ownerFilter){
+    const today = new Date();
+    const matches = (item) => !ownerFilter || ownerFilter==="全部" || (item.owner||"共同")===ownerFilter;
+    const loanTotal = this.data.loans.filter(l=>l.status!=="paid" && matches(l)).reduce((s,l)=>s+computeRemaining(l,today),0);
+    const cardInstallTotal = this.data.cards.filter(matches).reduce((s,c)=>s+c.installments.reduce((s2,i)=>s2+computeRemaining(i,today),0),0);
+    const cardBillTotal = this.data.cards.filter(matches).reduce((s,c)=>s+(Number(c.currentBillManual)||0),0);
+    const totalLiabilities = loanTotal+cardInstallTotal+cardBillTotal;
+    const assetTotal = this.data.assets.filter(matches).reduce((s,a)=>s+(Number(a.currentValue)||0),0);
+    const insAssetTotal = this.data.insurance.filter(i=>i.type==="savings"&&i.includeInNetWorth&&matches(i)).reduce((s,i)=>s+(Number(i.cashValue)||0),0);
+    const totalAssets = assetTotal+insAssetTotal;
+    const netWorth = totalAssets-totalLiabilities;
+    const loanMonthly = this.data.loans.filter(l=>l.status!=="paid"&&matches(l)).reduce((s,l)=>s+(Number(l.monthlyPayment)||0),0);
+    const cardMonthly = this.data.cards.filter(matches).reduce((s,c)=>s+c.installments.reduce((s2,i)=>s2+(Number(i.monthlyPayment)||0),0),0);
+    const incomeMonthly = (this.data.income||[]).filter(matches).reduce((s,i)=>s+((Number(i.amount)||0)/(i.frequency==="annual"?12:1)),0);
+    return {loanTotal,cardInstallTotal,cardBillTotal,totalLiabilities,assetTotal,insAssetTotal,totalAssets,netWorth,loanMonthly,cardMonthly,incomeMonthly};
+  },
+
+  async saveSnapshot(){
+    const t = this.totals();
+    const d = todayStr();
+    this.data.history = this.data.history.filter(x=>x.date!==d);
+    this.data.history.push({date:d, totalAssets:t.totalAssets, totalLiabilities:t.totalLiabilities, netWorth:t.netWorth});
+    this.data.history.sort((a,b)=> a.date<b.date?-1:1);
+    await this.persist();
+    this.render();
+  },
+
+  // ---------- form helpers ----------
+  fieldHtml(f, value){
+    const val = (value===undefined||value===null) ? "" : value;
+    if (f.type==="select"){
+      return `<label class="field"><span>${f.label}</span><select id="f_${f.key}" ${f.key==='type'?'onchange="App.onFormFieldChange()"':''}>
+        <option value="">选择...</option>
+        ${f.options.map(o=>`<option value="${o.value}" ${o.value===val?"selected":""}>${o.label}</option>`).join("")}
+      </select></label>`;
+    }
+    if (f.type==="checkbox"){
+      return `<label class="field checkbox"><input type="checkbox" id="f_${f.key}" ${value?"checked":""}/> ${f.label}</label>`;
+    }
+    if (f.solvable){
+      return `<label class="field"><span>${f.label}(不知道可留空,填完本金/月供/期数后点反推)</span>
+        <div style="display:flex;gap:6px;">
+          <input type="number" id="f_${f.key}" step="${f.step||""}" value="${val}" style="flex:1;"/>
+          <button type="button" class="icon-btn" onclick="App.solveRateForForm()">🧮反推</button>
+        </div>
+      </label>`;
+    }
+    return `<label class="field"><span>${f.label}</span><input type="${f.type}" id="f_${f.key}" ${f.step?`step="${f.step}"`:""} placeholder="${f.placeholder||""}" value="${val}"/></label>`;
+  },
+
+  renderFormInner(){
+    const of = this.openForm;
+    if (!of) return "";
+    const visible = of.schema.filter(f=>!f.showIf || f.showIf(of.values));
+    return `<div class="form-card" id="form-container">
+      <div class="form-grid">${visible.map(f=>this.fieldHtml(f, of.values[f.key])).join("")}</div>
+      <div class="form-actions">
+        <button class="btn-primary" onclick="App.submitForm()">💾 保存</button>
+        <button class="btn-ghost" onclick="App.cancelForm()">取消</button>
+      </div>
+    </div>`;
+  },
+
+  onFormFieldChange(){
+    const of = this.openForm;
+    of.schema.forEach(f=>{
+      const el = document.getElementById("f_"+f.key);
+      if (!el) return;
+      of.values[f.key] = f.type==="checkbox" ? el.checked : el.value;
+    });
+    const el = document.getElementById("form-container");
+    if (el) el.outerHTML = this.renderFormInner();
+  },
+
+  captureFormValues(){
+    const of = this.openForm;
+    const vals = {...of.values};
+    of.schema.forEach(f=>{
+      const el = document.getElementById("f_"+f.key);
+      if (!el) return;
+      vals[f.key] = f.type==="checkbox" ? el.checked : el.value;
+    });
+    return vals;
+  },
+
+  solveRateForForm(){
+    const P0 = Number(document.getElementById("f_basePrincipal")?.value);
+    const A = Number(document.getElementById("f_monthlyPayment")?.value);
+    const n = Number(document.getElementById("f_remainingTermsAtBase")?.value);
+    const methodEl = document.getElementById("f_method");
+    const method = methodEl ? methodEl.value : "equal_installment";
+    if (!P0 || !A || !n){
+      alert("请先填写「基准剩余本金」「月供/月还款」「基准日剩余期数」这三项,再点反推。");
+      return;
+    }
+    if (method && method !== "equal_installment"){
+      alert("目前只支持「等额本息」方式反推利率,其他还款方式请手动填写利率(或先估一个数字,不影响系统按剩余期数线性推算本金)。");
+      return;
+    }
+    const r = impliedMonthlyRate(P0, A, n);
+    if (r === null){
+      alert("反推失败:月供 × 期数 需要大于本金,请检查数值是否填对。");
+      return;
+    }
+    const annualRate = Math.round(r*12*10000)/100;
+    const rateEl = document.getElementById("f_rate");
+    if (rateEl) rateEl.value = annualRate;
+    if (this.openForm) this.openForm.values.rate = annualRate;
+    alert(`已反推年利率约 ${annualRate}%,可以再手动微调。`);
+  },
+
+  ownerField(){
+    const opts = this.data.familyMembers.map(n=>({value:n, label:n}));
+    opts.push({value:"共同", label:"共同"});
+    return {key:"owner", label:"归属", type:"select", options:opts};
+  },
+  schemaWithOwner(kind, schema){
+    return ["loan","card","asset","insurance","income"].includes(kind) ? [...schema, this.ownerField()] : schema;
+  },
+  openAddForm(kind, schema, defaults, cardId){
+    this.openForm = {kind, mode:"add", id:null, cardId:cardId||null, schema:this.schemaWithOwner(kind,schema), values:{owner:"共同", ...defaults}};
+    this.render();
+  },
+  openEditForm(kind, schema, values, cardId){
+    this.openForm = {kind, mode:"edit", id:values.id, cardId:cardId||null, schema:this.schemaWithOwner(kind,schema), values:{...values}};
+    this.render();
+  },
+  editFamilyMembers(){
+    const n1 = prompt("成员1 名称:", this.data.familyMembers[0] || "小桃");
+    if (n1===null) return;
+    const n2 = prompt("成员2 名称:", this.data.familyMembers[1] || "小饼");
+    if (n2===null) return;
+    this.data.familyMembers = [n1.trim()||"小桃", n2.trim()||"小饼"];
+    this.persist();
+    this.render();
+  },
+  setOwnerFilter(v){ this.ownerFilter = v; this.render(); },
+  cancelForm(){ this.openForm=null; this.render(); },
+
+  async submitForm(){
+    const of = this.openForm;
+    const vals = this.captureFormValues();
+    ["basePrincipal","rate","monthlyPayment","dueDay","remainingTermsAtBase","totalLimit","currentBillManual","currentValue","coverageAmount","annualPremium","cashValue","amount"].forEach(k=>{
+      if (vals[k]!==undefined && vals[k]!=="") vals[k]=Number(vals[k]);
+    });
+    if (of.kind==="loan"){
+      if (of.mode==="add") this.data.loans.push({...vals, id:"l"+Date.now(), status:"active"});
+      else this.data.loans = this.data.loans.map(x=>x.id===of.id?{...x,...vals}:x);
+    } else if (of.kind==="card"){
+      if (of.mode==="add") this.data.cards.push({...vals, id:"c"+Date.now(), installments:[]});
+      else this.data.cards = this.data.cards.map(x=>x.id===of.id?{...x,...vals}:x);
+    } else if (of.kind==="installment"){
+      const card = this.data.cards.find(c=>c.id===of.cardId);
+      if (of.mode==="add") card.installments.push({...vals, id:"i"+Date.now()});
+      else card.installments = card.installments.map(x=>x.id===of.id?{...x,...vals}:x);
+    } else if (of.kind==="asset"){
+      if (of.mode==="add") this.data.assets.push({...vals, id:"a"+Date.now()});
+      else this.data.assets = this.data.assets.map(x=>x.id===of.id?{...x,...vals}:x);
+    } else if (of.kind==="insurance"){
+      if (of.mode==="add") this.data.insurance.push({...vals, id:"ins"+Date.now()});
+      else this.data.insurance = this.data.insurance.map(x=>x.id===of.id?{...x,...vals}:x);
+    } else if (of.kind==="income"){
+      if (of.mode==="add") this.data.income.push({...vals, id:"inc"+Date.now()});
+      else this.data.income = this.data.income.map(x=>x.id===of.id?{...x,...vals}:x);
+    }
+    this.openForm = null;
+    await this.persist();
+    this.render();
+  },
+
+  async deleteItem(kind, id, cardId){
+    if (!confirm("确定删除这条记录吗?")) return;
+    if (kind==="loan") this.data.loans = this.data.loans.filter(x=>x.id!==id);
+    if (kind==="card") this.data.cards = this.data.cards.filter(x=>x.id!==id);
+    if (kind==="installment"){ const card=this.data.cards.find(c=>c.id===cardId); card.installments=card.installments.filter(x=>x.id!==id); }
+    if (kind==="asset") this.data.assets = this.data.assets.filter(x=>x.id!==id);
+    if (kind==="insurance") this.data.insurance = this.data.insurance.filter(x=>x.id!==id);
+    if (kind==="income") this.data.income = this.data.income.filter(x=>x.id!==id);
+    await this.persist();
+    this.render();
+  },
+
+  async toggleLoanPaid(id){
+    this.data.loans = this.data.loans.map(x=>x.id===id?{...x, status:x.status==="paid"?"active":"paid"}:x);
+    await this.persist(); this.render();
+  },
+
+  async calibrate(kind, id, cardId, value){
+    const val = Number(value);
+    if (isNaN(val)) return;
+    if (kind==="loan") this.data.loans = this.data.loans.map(x=>x.id===id?{...x, basePrincipal:val, baseDate:todayStr()}:x);
+    if (kind==="installment"){ const card=this.data.cards.find(c=>c.id===cardId); card.installments=card.installments.map(x=>x.id===id?{...x, basePrincipal:val, baseDate:todayStr()}:x); }
+    if (kind==="cardbill") this.data.cards = this.data.cards.map(x=>x.id===id?{...x, currentBillManual:val}:x);
+    await this.persist(); this.render();
+  },
+
+  toggleCalibrate(elId, current){
+    const el = document.getElementById(elId);
+    el.innerHTML = `<span style="display:inline-flex;gap:6px;align-items:center;">
+      <input class="calibrate-input" type="number" id="${elId}_input" value="${current}"/>
+      <button class="icon-btn" onclick="App.confirmCalibrate('${elId}')">✓</button>
+      <button class="icon-btn" onclick="App.render()">✕</button>
+    </span>`;
+  },
+  confirmCalibrate(elId){
+    const input = document.getElementById(elId+"_input");
+    const val = input.value;
+    const [kind, id, cardId] = elId.split("__");
+    this.calibrate(kind, id, cardId==="null"?null:cardId, val);
+  },
+
+  toggleCardExpand(id){ this.expandedCard = this.expandedCard===id ? null : id; this.render(); },
+
+  renderOwnerChips(){
+    const opts = ["全部", ...this.data.familyMembers, "共同"];
+    return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+      ${opts.map(o=>`<span class="tab ${this.ownerFilter===o?'active':''}" style="padding:5px 12px;font-size:12px;" onclick="App.setOwnerFilter('${o}')">${o==="全部"?"":this.ownerEmoji(o)+" "}${o}</span>`).join("")}
+    </div>`;
+  },
+  matchOwner(item){ return this.ownerFilter==="全部" || (item.owner||"共同")===this.ownerFilter; },
+
+  // ---------- render ----------
+  render(){
+    const totals = this.totals();
+    const TABS = [
+      {id:"dashboard", label:"💰 总览"},
+      {id:"loans", label:"🏦 贷款"},
+      {id:"cards", label:"💳 信用卡"},
+      {id:"income", label:"💵 收入"},
+      {id:"assets", label:"📈 资产"},
+      {id:"insurance", label:"🛡️ 保险"},
+      {id:"history", label:"📊 趋势"},
+    ];
+    let body = "";
+    if (this.tab==="dashboard") body = this.renderDashboard(totals);
+    else if (this.tab==="loans") body = this.renderLoans(totals);
+    else if (this.tab==="cards") body = this.renderCards(totals);
+    else if (this.tab==="income") body = this.renderIncome();
+    else if (this.tab==="assets") body = this.renderAssets();
+    else if (this.tab==="insurance") body = this.renderInsurance();
+    else if (this.tab==="history") body = this.renderHistory();
+
+    document.getElementById("root").innerHTML = `
+      <div class="wrap">
+        <div class="tabs" style="margin-bottom:2px;">
+          ${this.data.familyMembers.map(n=>`<span class="tab ${this.currentUser===n?'active':''}" style="border-color:var(--clay);${this.currentUser===n?'background:var(--clay);':''}" onclick="App.setCurrentUser('${n}')">${this.ownerEmoji(n)} 我是${n}</span>`).join("")}
+        </div>
+        <div class="tabs">
+          ${TABS.map(t=>`<div class="tab ${this.tab===t.id?'active':''}" onclick="App.setTab('${t.id}')">${t.label}</div>`).join("")}
+          <div class="tab" onclick="App.editFamilyMembers()">⚙️ ${this.data.familyMembers.map(n=>this.ownerEmoji(n)+n).join(" / ")}</div>
+        </div>
+        ${body}
+      </div>`;
+
+    if (this.tab==="history") this.drawChart();
+  },
+
+  allDebtRows(){
+    const today = new Date();
+    const rows = [];
+    this.data.loans.filter(l=>l.status!=="paid").forEach(l=>{
+      rows.push({name:l.name, owner:l.owner||"共同", rate:l.rate, remaining:computeRemaining(l,today), monthlyPayment:l.monthlyPayment});
+    });
+    this.data.cards.forEach(c=>{
+      c.installments.forEach(i=>{
+        rows.push({name:`${c.name}·${i.label}`, owner:c.owner||"共同", rate:i.rate, remaining:computeRemaining(i,today), monthlyPayment:i.monthlyPayment});
+      });
+      if (Number(c.currentBillManual)>0){
+        rows.push({name:`${c.name}·当期账单`, owner:c.owner||"共同", rate:null, remaining:Number(c.currentBillManual), monthlyPayment:0});
+      }
+    });
+    return rows.sort((a,b)=>(b.rate||0)-(a.rate||0));
+  },
+
+  async getAiAdvice(){
+    this.aiLoading = true;
+    this.aiAdvice = null;
+    this.render();
+    try {
+      const debts = this.allDebtRows();
+      const t = this.totals();
+      const income = {
+        familyMonthly: t.incomeMonthly,
+        byOwner: [...this.data.familyMembers, "共同"].map(o=>({owner:o, monthly:this.totals(o).incomeMonthly})),
+      };
+      const res = await fetch("/.netlify/functions/debt-advice", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({debts, income}),
+      });
+      const data = await res.json();
+      this.aiAdvice = data.advice || data.error || "生成失败,请稍后重试。";
+    } catch(e){
+      this.aiAdvice = "请求失败:" + e.message + "(检查是否已部署 Netlify Function 并配置 DEEPSEEK_API_KEY)";
+    }
+    this.aiLoading = false;
+    this.render();
+  },
+
+  renderRing(netWorth){
+    const history = this.data.history;
+    const baseline = history.length>0 ? history[0].netWorth : Math.min(netWorth,-1);
+    let progress;
+    if (netWorth>=0) progress=1;
+    else if (baseline>=0) progress=0;
+    else progress = Math.max(0, Math.min(1, (netWorth-baseline)/-baseline));
+    const size=180, stroke=14, r=(size-stroke)/2, circ=2*Math.PI*r, dash=circ*progress;
+    const color = netWorth>=0 ? "var(--sage)" : "var(--clay)";
+    return `<div class="ring-wrap">
+      <svg width="${size}" height="${size}" style="transform:rotate(-90deg)">
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="var(--border)" stroke-width="${stroke}" fill="none"/>
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="${color}" stroke-width="${stroke}" fill="none" stroke-linecap="round"
+          stroke-dasharray="${dash} ${circ}"/>
+      </svg>
+      <div class="ring-center">
+        <div style="font-size:13px;color:var(--ink-soft);">${netWorth>=0?"🌳 已转正":"🌱 成长中"}</div>
+        <div style="font-family:'Noto Serif SC',serif;font-size:22px;font-weight:700;">${Math.round(progress*100)}%</div>
+      </div>
+    </div>`;
+  },
+
+  renderDashboard(t){
+    const today = new Date();
+    const upcoming = [];
+    this.data.loans.filter(l=>l.status!=="paid").forEach(l=>upcoming.push({name:l.name, dueDay:l.dueDay, amount:l.monthlyPayment}));
+    this.data.cards.forEach(c=>{
+      const s = c.installments.reduce((s2,i)=>s2+(Number(i.monthlyPayment)||0),0);
+      if (s>0) upcoming.push({name:c.name, dueDay:c.dueDay, amount:s});
+    });
+    upcoming.sort((a,b)=>(a.dueDay||99)-(b.dueDay||99));
+    const insReminders = this.data.insurance.filter(i=>i.status==="active"&&i.paymentDate)
+      .map(i=>({...i, days:daysUntilNext(i.paymentDate)})).sort((a,b)=>a.days-b.days);
+
+    return `
+      <div class="card" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:20px;">
+        ${this.renderRing(t.netWorth)}
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:13px;color:var(--ink-soft);">当前净值</div>
+          <div style="font-family:'Noto Serif SC',serif;font-size:36px;font-weight:900;color:${t.netWorth>=0?'var(--sage)':'var(--clay)'};">
+            ${t.netWorth>=0?"":"-"}¥${fmt(Math.abs(t.netWorth))}
+          </div>
+          <div class="muted" style="margin-top:4px;">种下第一颗种子,一天天记录,总会长成一棵树 🌳</div>
+          <button class="btn-primary" style="margin-top:12px;" onclick="App.saveSnapshot()">📌 保存今日快照</button>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat" style="background:var(--sage-light);"><div class="stat-label">总资产</div><div class="stat-value" style="color:var(--sage);">¥${fmt(t.totalAssets)}</div></div>
+        <div class="stat" style="background:var(--rust-light);"><div class="stat-label">总负债</div><div class="stat-value" style="color:var(--rust);">¥${fmt(t.totalLiabilities)}</div></div>
+        <div class="stat" style="background:var(--clay-light);"><div class="stat-label">贷款月供</div><div class="stat-value" style="color:var(--clay);">¥${fmt(t.loanMonthly)}</div></div>
+        <div class="stat" style="background:var(--gold-light);"><div class="stat-label">信用卡月供</div><div class="stat-value" style="color:var(--gold);">¥${fmt(t.cardMonthly)}</div></div>
+        <div class="stat" style="background:var(--sage-light);"><div class="stat-label">家庭月收入</div><div class="stat-value" style="color:var(--sage);">¥${fmt(t.incomeMonthly)}</div></div>
+      </div>
+      <div style="margin:16px 0;">
+        <div style="font-size:15px;font-weight:700;margin-bottom:8px;">👪 按归属拆分</div>
+        <div class="stat-grid">
+          ${[...this.data.familyMembers, "共同"].map(owner=>{
+            const ot = this.totals(owner);
+            return `<div class="stat" style="background:var(--card);border:1px solid var(--border);">
+              <div class="stat-label">${this.ownerEmoji(owner)} ${owner}</div>
+              <div class="stat-value" style="color:${ot.netWorth>=0?'var(--sage)':'var(--rust)'};">${ot.netWorth>=0?'':'-'}¥${fmt(Math.abs(ot.netWorth))}</div>
+              <div class="muted" style="margin-top:2px;">资产¥${fmt(ot.totalAssets)} · 负债¥${fmt(ot.totalLiabilities)} · 月收入¥${fmt(ot.incomeMonthly)}</div>
+            </div>`;
+          }).join("")}
+        </div>
+      </div>
+      <div style="margin:16px 0;">
+        <div class="row-between" style="margin-bottom:8px;">
+          <div style="font-size:15px;font-weight:700;">🤖 AI 还款建议</div>
+          <button class="btn-primary" onclick="App.getAiAdvice()">${this.aiLoading?"生成中...":"生成建议"}</button>
+        </div>
+        ${this.aiAdvice ? `<div class="card" style="white-space:pre-wrap;line-height:1.7;">${this.aiAdvice}</div>` : `<div class="muted">点「生成建议」,会把当前全部负债和收入情况发给 AI,给出还款优先级参考。</div>`}
+      </div>
+      <div style="margin:16px 0;">
+        <div style="font-size:15px;font-weight:700;margin-bottom:8px;">📋 全部负债明细(按利率从高到低)</div>
+        <div class="card" style="padding:8px 16px;">
+          <table>
+            <thead><tr><th>名称</th><th>归属</th><th>利率</th><th>剩余</th><th>月供</th></tr></thead>
+            <tbody>
+              ${this.allDebtRows().map(r=>`<tr>
+                <td>${r.name}</td><td>${this.ownerEmoji(r.owner)} ${r.owner}</td><td>${r.rate!=null?r.rate+'%':'-'}</td><td>¥${fmt(r.remaining)}</td><td>¥${fmt(r.monthlyPayment)}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="two-col">
+        <div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:8px;">📅 本月待还</div>
+          ${upcoming.length===0 ? '<div class="muted">暂无记录</div>' : upcoming.map(u=>`
+            <div class="card row-between" style="padding:10px 14px;">
+              <span>${u.name} · ${u.dueDay?u.dueDay+'号':'日期待定'}</span>
+              <span style="font-weight:600;">¥${fmt(u.amount)}</span>
+            </div>`).join("")}
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:8px;">🛡️ 保险缴费提醒</div>
+          ${insReminders.length===0 ? '<div class="muted">暂无保单</div>' : insReminders.map(i=>`
+            <div class="card row-between" style="padding:10px 14px;">
+              <span>${i.name}</span><span style="font-weight:600;">${i.days}天后</span>
+            </div>`).join("")}
+        </div>
+      </div>`;
+  },
+
+  renderLoans(){
+    const today = new Date();
+    const addForm = (this.openForm && this.openForm.kind==="loan") ? this.renderFormInner() : "";
+    return `
+      <div class="section-head">
+        <div><div class="title">🏦 贷款</div><div class="subtitle">系统按利率与期数自动推算剩余本金,点 ✏️ 可校准为实际值</div></div>
+        <button class="btn-primary" onclick="App.openAddForm('loan', LOAN_SCHEMA, {method:'equal_installment', baseDate: todayStr(), status:'active'})">➕ 添加贷款</button>
+      </div>
+      ${this.renderOwnerChips()}
+      ${addForm}
+      ${this.data.loans.filter(l=>this.matchOwner(l)).map(l=>{
+        if (this.openForm && this.openForm.kind==="loan" && this.openForm.id===l.id) {
+          return `<div class="card">${this.renderFormInner()}</div>`;
+        }
+        const remaining = computeRemaining(l, today);
+        const elId = `loan__${l.id}__null`;
+        const editable = this.canEdit(l);
+        return `<div class="card row-between">
+          <div>
+            <div style="font-weight:600;font-size:15px;">${l.name} <span style="font-size:11px;font-weight:400;color:var(--ink-soft);">· ${this.ownerEmoji(l.owner||"共同")} ${l.owner||"共同"}</span> ${l.status==="paid"?'<span style="color:var(--sage);font-size:12px;">✅ 已结清</span>':''}</div>
+            <div class="muted" style="margin-top:2px;">年利率 ${l.rate}% · 月供¥${fmt(l.monthlyPayment)} · 还款日${l.dueDay}号 · ${l.note||""}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="text-align:right;">
+              <div style="font-size:11px;color:var(--ink-faint);">📊 系统推算</div>
+              <div style="font-size:18px;font-weight:700;color:var(--rust);">¥${fmt(remaining)}</div>
+            </div>
+            ${editable ? `
+              <span id="${elId}"><button class="icon-btn" onclick="App.toggleCalibrate('${elId}', ${remaining})">✏️</button></span>
+              <button class="icon-btn" onclick='App.openEditForm("loan", LOAN_SCHEMA, ${JSON.stringify(l)})'>编辑</button>
+              <button class="icon-btn" onclick="App.toggleLoanPaid('${l.id}')">${l.status==="paid"?"恢复":"结清"}</button>
+              <button class="icon-btn" onclick="App.deleteItem('loan','${l.id}')">🗑️</button>
+            ` : `<span class="muted">仅${l.owner}可编辑</span>`}
+          </div>
+        </div>`;
+      }).join("")}`;
+  },
+
+  renderCards(){
+    const today = new Date();
+    const addForm = (this.openForm && this.openForm.kind==="card") ? this.renderFormInner() : "";
+    return `
+      <div class="section-head">
+        <div><div class="title">💳 信用卡与分期</div><div class="subtitle">当期账单需手动更新,分期部分自动推算</div></div>
+        <button class="btn-primary" onclick="App.openAddForm('card', CARD_SCHEMA, {})">➕ 添加信用卡</button>
+      </div>
+      ${this.renderOwnerChips()}
+      ${addForm}
+      ${this.data.cards.filter(c=>this.matchOwner(c)).map(c=>{
+        if (this.openForm && this.openForm.kind==="card" && this.openForm.id===c.id) {
+          return `<div class="card">${this.renderFormInner()}</div>`;
+        }
+        const installSum = c.installments.reduce((s,i)=>s+computeRemaining(i,today),0);
+        const cardTotal = installSum + (Number(c.currentBillManual)||0);
+        const expanded = this.expandedCard===c.id;
+        const billElId = `cardbill__${c.id}__null`;
+        let installRows = "";
+        if (c.installments.length>0){
+          installRows = `<table><thead><tr><th>分期</th><th>利率</th><th>推算余额</th><th>月还款</th><th></th></tr></thead><tbody>
+            ${c.installments.map(i=>{
+              const bal = computeRemaining(i, today);
+              const iElId = `installment__${i.id}__${c.id}`;
+              if (this.openForm && this.openForm.kind==="installment" && this.openForm.id===i.id) {
+                return `<tr><td colspan="5">${this.renderFormInner()}</td></tr>`;
+              }
+              return `<tr>
+                <td>${i.label}</td><td>${i.rate}%</td><td>¥${fmt(bal)}</td><td>¥${fmt(i.monthlyPayment)}</td>
+                <td style="display:flex;gap:6px;">
+                  ${this.canEdit(c) ? `
+                    <span id="${iElId}"><button class="icon-btn" onclick="App.toggleCalibrate('${iElId}', ${bal})">✏️</button></span>
+                    <button class="icon-btn" onclick='App.openEditForm("installment", INSTALLMENT_SCHEMA, ${JSON.stringify(i)}, "${c.id}")'>编辑</button>
+                    <button class="icon-btn" onclick="App.deleteItem('installment','${i.id}','${c.id}')">🗑️</button>
+                  ` : ""}
+                </td>
+              </tr>`;
+            }).join("")}
+          </tbody></table>`;
+        }
+        const addInstallForm = (this.openForm && this.openForm.kind==="installment" && this.openForm.mode==="add" && this.openForm.cardId===c.id) ? this.renderFormInner() : `<button class="btn-ghost" style="margin-top:10px;" onclick="App.openAddForm('installment', INSTALLMENT_SCHEMA, {method:'equal_installment', baseDate: todayStr()}, '${c.id}')">➕ 添加分期明细</button>`;
+        return `<div class="card">
+          <div class="row-between">
+            <div>
+              <div style="font-weight:600;font-size:15px;">${c.name} <span style="font-size:11px;font-weight:400;color:var(--ink-soft);">· ${this.ownerEmoji(c.owner||"共同")} ${c.owner||"共同"}</span></div>
+              <div class="muted" style="margin-top:2px;">额度¥${fmt(c.totalLimit)} · 还款日${c.dueDay}号 · ${c.note||""}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="text-align:right;"><div style="font-size:11px;color:var(--ink-faint);">合计欠款</div><div style="font-size:18px;font-weight:700;color:var(--rust);">¥${fmt(cardTotal)}</div></div>
+              ${this.canEdit(c) ? `
+                <button class="icon-btn" onclick='App.openEditForm("card", CARD_SCHEMA, ${JSON.stringify(c)})'>编辑</button>
+                <button class="icon-btn" onclick="App.deleteItem('card','${c.id}')">🗑️</button>
+              ` : ""}
+              <button class="icon-btn" onclick="App.toggleCardExpand('${c.id}')">${expanded?"收起":"展开"}</button>
+            </div>
+          </div>
+          ${expanded ? `
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            <div class="row-between" style="margin-bottom:8px;">
+              <span style="font-size:13px;">当期账单/未分期欠款:</span>
+              <span style="display:flex;align-items:center;gap:8px;"><b>¥${fmt(c.currentBillManual)}</b>
+                ${this.canEdit(c) ? `<span id="${billElId}"><button class="icon-btn" onclick="App.toggleCalibrate('${billElId}', ${c.currentBillManual})">✏️</button></span>` : ""}
+              </span>
+            </div>
+            ${installRows}
+            ${this.canEdit(c) ? addInstallForm : ""}
+          </div>` : ""}
+        </div>`;
+      }).join("")}`;
+  },
+
+  renderIncome(){
+    const addForm = (this.openForm && this.openForm.kind==="income") ? this.renderFormInner() : "";
+    const freqLabel = {monthly:"每月", annual:"每年"};
+    return `
+      <div class="section-head">
+        <div><div class="title">💵 收入</div><div class="subtitle">工资、房租等,各自的收入各自记,家庭共同收入标共同</div></div>
+        <button class="btn-primary" onclick="App.openAddForm('income', INCOME_SCHEMA, {frequency:'monthly'})">➕ 添加收入</button>
+      </div>
+      ${this.renderOwnerChips()}
+      ${addForm}
+      ${(this.data.income||[]).length===0 ? '<div class="muted">还没有收入记录,点右上角添加第一项吧。</div>' : ""}
+      ${(this.data.income||[]).filter(i=>this.matchOwner(i)).map(i=>{
+        if (this.openForm && this.openForm.kind==="income" && this.openForm.id===i.id) return `<div class="card">${this.renderFormInner()}</div>`;
+        const editable = this.canEdit(i);
+        return `<div class="card row-between">
+          <div>
+            <div style="font-weight:600;">${i.name} <span style="font-size:11px;color:var(--ink-soft);font-weight:400;">· ${freqLabel[i.frequency]||i.frequency} · ${this.ownerEmoji(i.owner||"共同")} ${i.owner||"共同"}</span></div>
+            <div class="muted">${i.note||""}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:18px;font-weight:700;color:var(--sage);">¥${fmt(i.amount)}</div>
+            ${editable ? `
+              <button class="icon-btn" onclick='App.openEditForm("income", INCOME_SCHEMA, ${JSON.stringify(i)})'>编辑</button>
+              <button class="icon-btn" onclick="App.deleteItem('income','${i.id}')">🗑️</button>
+            ` : `<span class="muted">仅本人可编辑</span>`}
+          </div>
+        </div>`;
+      }).join("")}`;
+  },
+
+  renderAssets(){
+    const addForm = (this.openForm && this.openForm.kind==="asset") ? this.renderFormInner() : "";
+    const catLabel = {cash:"现金/存款", fixed:"固定资产", invest:"投资"};
+    return `
+      <div class="section-head">
+        <div><div class="title">📈 资产</div><div class="subtitle">现金、固定资产、投资,几天到一两个月核对一次即可</div></div>
+        <button class="btn-primary" onclick="App.openAddForm('asset', ASSET_SCHEMA, {category:'cash', lastUpdated: todayStr()})">➕ 添加资产</button>
+      </div>
+      ${this.renderOwnerChips()}
+      ${addForm}
+      ${this.data.assets.length===0 ? '<div class="muted">还没有资产记录,点右上角添加第一项吧。</div>' : ""}
+      ${this.data.assets.filter(a=>this.matchOwner(a)).map(a=>{
+        if (this.openForm && this.openForm.kind==="asset" && this.openForm.id===a.id) return `<div class="card">${this.renderFormInner()}</div>`;
+        return `<div class="card row-between">
+          <div>
+            <div style="font-weight:600;">${a.name} <span style="font-size:11px;color:var(--ink-soft);font-weight:400;">· ${catLabel[a.category]||a.category} · ${this.ownerEmoji(a.owner||"共同")} ${a.owner||"共同"}</span></div>
+            <div class="muted">更新于 ${a.lastUpdated||""} ${a.note||""}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:18px;font-weight:700;color:var(--sage);">¥${fmt(a.currentValue)}</div>
+            ${this.canEdit(a) ? `
+              <button class="icon-btn" onclick='App.openEditForm("asset", ASSET_SCHEMA, ${JSON.stringify(a)})'>编辑</button>
+              <button class="icon-btn" onclick="App.deleteItem('asset','${a.id}')">🗑️</button>
+            ` : `<span class="muted">仅${a.owner}可编辑</span>`}
+          </div>
+        </div>`;
+      }).join("")}`;
+  },
+
+  renderInsurance(){
+    const addForm = (this.openForm && this.openForm.kind==="insurance") ? this.renderFormInner() : "";
+    return `
+      <div class="section-head">
+        <div><div class="title">🛡️ 保险</div><div class="subtitle">消费型只做提醒;储蓄/年金型可选择是否计入净值</div></div>
+        <button class="btn-primary" onclick="App.openAddForm('insurance', INSURANCE_SCHEMA, {type:'consumption', status:'active'})">➕ 添加保单</button>
+      </div>
+      ${this.renderOwnerChips()}
+      ${addForm}
+      ${this.data.insurance.length===0 ? '<div class="muted">还没有保单记录,点右上角添加第一份吧。</div>' : ""}
+      ${this.data.insurance.filter(i=>this.matchOwner(i)).map(i=>{
+        if (this.openForm && this.openForm.kind==="insurance" && this.openForm.id===i.id) return `<div class="card">${this.renderFormInner()}</div>`;
+        return `<div class="card row-between">
+          <div>
+            <div style="font-weight:600;">${i.name} <span style="font-size:11px;color:var(--ink-soft);font-weight:400;">· ${i.type==="savings"?"储蓄/年金型":"消费型"} · ${this.ownerEmoji(i.owner||"共同")} ${i.owner||"共同"}</span></div>
+            <div class="muted">保额¥${fmt(i.coverageAmount)} · 年缴¥${fmt(i.annualPremium)} · 缴费日${i.paymentDate||""} · ${i.status==="active"?"生效中":"已终止"}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            ${(i.type==="savings"&&i.includeInNetWorth) ? `<div style="font-size:18px;font-weight:700;color:var(--sage);">¥${fmt(i.cashValue)}</div>` : ""}
+            ${this.canEdit(i) ? `
+              <button class="icon-btn" onclick='App.openEditForm("insurance", INSURANCE_SCHEMA, ${JSON.stringify(i)})'>编辑</button>
+              <button class="icon-btn" onclick="App.deleteItem('insurance','${i.id}')">🗑️</button>
+            ` : `<span class="muted">仅${i.owner}可编辑</span>`}
+          </div>
+        </div>`;
+      }).join("")}`;
+  },
+
+  renderHistory(){
+    if (this.data.history.length===0){
+      return `
+        <div class="section-head"><div><div class="title">📊 净值趋势</div><div class="subtitle">每次在总览页保存快照,这里就会多一个点</div></div></div>
+        <div class="muted">还没有历史快照,去总览页点「保存今日快照」开始记录吧。</div>`;
+    }
+    const rows = [...this.data.history].reverse().map(h=>`
+      <tr><td>${h.date}</td><td>¥${fmt(h.totalAssets)}</td><td>¥${fmt(h.totalLiabilities)}</td>
+      <td style="color:${h.netWorth>=0?'var(--sage)':'var(--rust)'};font-weight:600;">¥${fmt(h.netWorth)}</td></tr>`).join("");
+    return `
+      <div class="section-head"><div><div class="title">📊 净值趋势</div><div class="subtitle">每次在总览页保存快照,这里就会多一个点</div></div></div>
+      <div class="card" style="height:280px;padding:16px 8px;"><canvas id="trendChart"></canvas></div>
+      <table style="margin-top:12px;"><thead><tr><th>日期</th><th>总资产</th><th>总负债</th><th>净值</th></tr></thead><tbody>${rows}</tbody></table>`;
+  },
+
+  drawChart(){
+    const ctx = document.getElementById("trendChart");
+    if (!ctx) return;
+    if (this.chart) this.chart.destroy();
+    this.chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: this.data.history.map(h=>h.date),
+        datasets: [{
+          label: "净值",
+          data: this.data.history.map(h=>h.netWorth),
+          borderColor: "#B75E37",
+          backgroundColor: "rgba(183,94,55,0.1)",
+          tension: 0.3,
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display:false } },
+        scales: {
+          x: { grid: { color: "#DDCEB2" }, ticks: { color:"#7A6A56", font:{size:11} } },
+          y: { grid: { color: "#DDCEB2" }, ticks: { color:"#7A6A56", font:{size:11}, callback:v=>Math.round(v/1000)+"k" } },
+        },
+      },
+    });
+  },
+};
+
+App.init();
+</script>
+</body>
+</html>
