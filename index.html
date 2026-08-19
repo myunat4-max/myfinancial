@@ -56,8 +56,8 @@
 
 <script>
 /* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
 const sb = (SUPABASE_URL.startsWith("http")) ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -111,6 +111,8 @@ function impliedMonthlyRate(P0, A, n){
   }
   return (lo+hi)/2;
 }
+
+const METHOD_OPTIONS = [
   {value:"equal_installment", label:"等额本息"},
   {value:"equal_principal", label:"等额本金"},
   {value:"interest_free", label:"无息分期"},
