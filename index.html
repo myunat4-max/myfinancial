@@ -16,16 +16,16 @@
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--ink);}
-  .wrap{max-width:920px;margin:0 auto;padding:20px 20px 100px;}
-  .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:16px;margin-bottom:8px;}
+  .wrap{max-width:920px;margin:0 auto;padding:16px 16px 100px;}
+  .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:4px;}
   .tab{padding:8px 14px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--ink-soft);white-space:nowrap;}
   .tab.active{border-color:var(--wood);background:var(--wood);color:#fff;font-weight:600;}
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
   .card.flat{border:none;}
   .row-between{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
-  .section-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
-  .title{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:700;color:var(--ink);}
-  .subtitle{font-size:13px;color:var(--ink-soft);margin-top:2px;}
+  .section-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+  .title{font-family:'Noto Serif SC',serif;font-size:20px;font-weight:700;color:var(--ink);}
+  .subtitle{font-size:12px;color:var(--ink-soft);margin-top:2px;}
   .muted{color:var(--ink-faint);font-size:13px;}
   .btn-primary{background:var(--wood);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500;}
   .btn-primary:active{transform:scale(0.98);}
@@ -33,22 +33,48 @@
   .icon-btn{background:#fff;border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:13px;cursor:pointer;}
   .form-card{background:var(--card-soft);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;}
   .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;}
-  .field{display:flex;flex-direction:column;font-size:12px;color:var(--ink-soft);gap:4px;}
+  .field{display:flex;flex-direction:column;font-size:12px;color:var(--ink-soft);gap:4px;position:relative;}
   .field.checkbox{flex-direction:row;align-items:center;gap:8px;}
-  .field input, .field select{border:1px solid var(--border);background:#fff;border-radius:8px;padding:8px 10px;font-size:14px;color:var(--ink);width:100%;}
+  .field input{border:1px solid var(--border);background:#fff;border-radius:8px;padding:8px 10px;font-size:14px;color:var(--ink);width:100%;}
   .form-actions{display:flex;gap:8px;margin-top:12px;}
   table{width:100%;border-collapse:collapse;}
   th{text-align:left;font-size:12px;color:var(--ink-soft);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--border);}
   td{padding:8px;font-size:13px;border-bottom:1px solid var(--border);}
-  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0;}
-  .stat{border-radius:12px;padding:14px 16px;}
-  .stat-label{font-size:12px;color:var(--ink-soft);}
-  .stat-value{font-size:22px;font-weight:700;}
+  .table-wrap{overflow-x:auto;}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:12px 0;}
+  .stat-row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;}
+  .stat{border-radius:12px;padding:12px 10px;}
+  .stat-label{font-size:11px;color:var(--ink-soft);}
+  .stat-value{font-size:18px;font-weight:700;}
   .two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;}
   .calibrate-input{width:90px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;}
   .loading{padding:60px 20px;text-align:center;color:var(--ink-soft);}
-  .ring-wrap{position:relative;width:180px;height:180px;flex-shrink:0;}
+  .ring-wrap{position:relative;width:150px;height:150px;flex-shrink:0;}
   .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .chip{display:inline-flex;align-items:center;gap:4px;background:var(--card-soft);border:1px solid var(--border);border-radius:8px;padding:3px 9px;font-size:12px;color:var(--ink-soft);white-space:nowrap;}
+  .chip b{color:var(--ink);font-weight:600;}
+  .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+  /* 自定义选择器,替代原生select */
+  .select-trigger{border:1px solid var(--border);background:#fff;border-radius:8px;padding:8px 10px;font-size:14px;color:var(--ink);width:100%;display:flex;justify-content:space-between;align-items:center;cursor:pointer;text-align:left;}
+  .select-trigger .ph{color:var(--ink-faint);}
+  .select-caret{color:var(--ink-faint);font-size:11px;margin-left:6px;}
+  .select-panel{position:absolute;top:100%;left:0;right:0;z-index:40;background:#fff;border:1px solid var(--border);border-radius:10px;margin-top:4px;box-shadow:0 6px 16px rgba(60,40,20,0.15);max-height:220px;overflow-y:auto;}
+  .select-option{padding:9px 12px;font-size:14px;cursor:pointer;color:var(--ink);}
+  .select-option:hover{background:var(--card-soft);}
+  .select-option.selected{background:var(--clay-light);font-weight:600;}
+  /* 身份栏 */
+  .identity-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .identity-pill{position:relative;display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:6px 12px 6px 10px;cursor:pointer;font-size:14px;font-weight:600;}
+  .identity-popover{position:absolute;top:110%;left:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 16px rgba(60,40,20,0.15);min-width:160px;z-index:50;overflow:hidden;}
+  .identity-popover div{padding:10px 14px;font-size:13px;font-weight:400;cursor:pointer;color:var(--ink);white-space:nowrap;}
+  .identity-popover div:hover{background:var(--card-soft);}
+  .identity-networth{font-size:13px;color:var(--ink-soft);}
+  .person-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .person-col{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;text-align:left;}
+  .person-col .p-head{font-weight:700;font-size:14px;margin-bottom:6px;}
+  .person-col .p-line{font-size:12px;color:var(--ink-soft);line-height:1.7;}
+  .person-col .p-line b{color:var(--ink);}
+  .picker-screen{min-height:65vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:20px;}
 </style>
 </head>
 <body>
@@ -56,8 +82,8 @@
 
 <script>
 /* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
 const sb = (SUPABASE_URL.startsWith("http")) ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -97,12 +123,11 @@ function daysUntilNext(monthDay){
   if (next < now) next = new Date(now.getFullYear()+1, m-1, d);
   return Math.ceil((next-now)/86400000);
 }
-
 function impliedMonthlyRate(P0, A, n){
   if (!(n>0) || !(P0>0) || !(A>0)) return null;
   const f = (r) => r===0 ? A*n - P0 : A*(1-Math.pow(1+r,-n))/r - P0;
-  if (f(0) < 0) return null; // 月供总额小于本金,数值不合理
-  let lo = 0, hi = 0.05; // 月利率上限5%(年化约60%),覆盖绝大多数场景
+  if (f(0) < 0) return null;
+  let lo = 0, hi = 0.05;
   for (let i=0; i<100; i++){
     const mid = (lo+hi)/2;
     const fm = f(mid);
@@ -215,10 +240,12 @@ const App = {
   tab: "dashboard",
   expandedCard: null,
   ownerFilter: "全部",
-  currentUser: null, // 存在浏览器本地,不同步到Supabase,只影响默认视图与编辑权限提示
+  currentUser: null,
+  identityMenuOpen: false,
+  dashboardSubTab: "upcoming",
   aiAdvice: null,
   aiLoading: false,
-  openForm: null, // {kind:'loan'|'card'|'installment'|'asset'|'insurance'|'income', mode:'add'|'edit', id, cardId, schema, values}
+  openForm: null, // {kind, mode:'add'|'edit', id, cardId, schema, values}
   chart: null,
 
   async init(){
@@ -249,9 +276,12 @@ const App = {
   setCurrentUser(name){
     this.currentUser = name;
     this.ownerFilter = name;
+    this.identityMenuOpen = false;
     try { localStorage.setItem("wealth-current-user", name); } catch(e){}
     this.render();
   },
+
+  toggleIdentityMenu(ev){ if(ev) ev.stopPropagation(); this.identityMenuOpen = !this.identityMenuOpen; this.render(); },
 
   ownerEmoji(owner){
     const idx = this.data.familyMembers.indexOf(owner);
@@ -274,6 +304,7 @@ const App = {
   },
 
   setTab(t){ this.tab = t; this.openForm=null; this.render(); },
+  setDashboardSubTab(t){ this.dashboardSubTab = t; this.render(); },
 
   totals(ownerFilter){
     const today = new Date();
@@ -281,6 +312,7 @@ const App = {
     const loanTotal = this.data.loans.filter(l=>l.status!=="paid" && matches(l)).reduce((s,l)=>s+computeRemaining(l,today),0);
     const cardInstallTotal = this.data.cards.filter(matches).reduce((s,c)=>s+c.installments.reduce((s2,i)=>s2+computeRemaining(i,today),0),0);
     const cardBillTotal = this.data.cards.filter(matches).reduce((s,c)=>s+(Number(c.currentBillManual)||0),0);
+    const cardLimitTotal = this.data.cards.filter(matches).reduce((s,c)=>s+(Number(c.totalLimit)||0),0);
     const totalLiabilities = loanTotal+cardInstallTotal+cardBillTotal;
     const assetTotal = this.data.assets.filter(matches).reduce((s,a)=>s+(Number(a.currentValue)||0),0);
     const insAssetTotal = this.data.insurance.filter(i=>i.type==="savings"&&i.includeInNetWorth&&matches(i)).reduce((s,i)=>s+(Number(i.cashValue)||0),0);
@@ -289,7 +321,7 @@ const App = {
     const loanMonthly = this.data.loans.filter(l=>l.status!=="paid"&&matches(l)).reduce((s,l)=>s+(Number(l.monthlyPayment)||0),0);
     const cardMonthly = this.data.cards.filter(matches).reduce((s,c)=>s+c.installments.reduce((s2,i)=>s2+(Number(i.monthlyPayment)||0),0),0);
     const incomeMonthly = (this.data.income||[]).filter(matches).reduce((s,i)=>s+((Number(i.amount)||0)/(i.frequency==="annual"?12:1)),0);
-    return {loanTotal,cardInstallTotal,cardBillTotal,totalLiabilities,assetTotal,insAssetTotal,totalAssets,netWorth,loanMonthly,cardMonthly,incomeMonthly};
+    return {loanTotal,cardInstallTotal,cardBillTotal,cardLimitTotal,totalLiabilities,assetTotal,insAssetTotal,totalAssets,netWorth,loanMonthly,cardMonthly,incomeMonthly};
   },
 
   async saveSnapshot(){
@@ -302,15 +334,49 @@ const App = {
     this.render();
   },
 
-  // ---------- form helpers ----------
+  // ---------- 自定义选择器 ----------
+  selectHtml(f, value){
+    const label = (f.options.find(o=>o.value===value)||{}).label;
+    return `<label class="field">
+      <span>${f.label}</span>
+      <div style="position:relative;">
+        <input type="hidden" id="f_${f.key}" value="${value||""}"/>
+        <div class="select-trigger" onclick="App.toggleDropdown('${f.key}', event)">
+          <span class="${label?'':'ph'}">${label || "请选择..."}</span>
+          <span class="select-caret">▾</span>
+        </div>
+        <div class="select-panel" id="panel_${f.key}" style="display:none;">
+          ${f.options.map(o=>`<div class="select-option ${o.value===value?'selected':''}" onclick="App.chooseOption('${f.key}','${o.value}', event)">${o.label}</div>`).join("")}
+        </div>
+      </div>
+    </label>`;
+  },
+  toggleDropdown(key, ev){
+    if (ev) ev.stopPropagation();
+    const panel = document.getElementById("panel_"+key);
+    if (!panel) return;
+    const isOpen = panel.style.display !== "none";
+    document.querySelectorAll(".select-panel").forEach(p=>p.style.display="none");
+    panel.style.display = isOpen ? "none" : "block";
+  },
+  chooseOption(key, value, ev){
+    if (ev) ev.stopPropagation();
+    if (!this.openForm) return;
+    // 先把当前表单里其它字段已输入的值收集起来,避免因为重渲染丢失
+    this.openForm.schema.forEach(ff=>{
+      const el = document.getElementById("f_"+ff.key);
+      if (!el) return;
+      this.openForm.values[ff.key] = ff.type==="checkbox" ? el.checked : el.value;
+    });
+    this.openForm.values[key] = value;
+    const container = document.getElementById("form-container");
+    if (container) container.outerHTML = this.renderFormInner();
+  },
+
+  // ---------- 表单通用 ----------
   fieldHtml(f, value){
     const val = (value===undefined||value===null) ? "" : value;
-    if (f.type==="select"){
-      return `<label class="field"><span>${f.label}</span><select id="f_${f.key}" ${f.key==='type'?'onchange="App.onFormFieldChange()"':''}>
-        <option value="">选择...</option>
-        ${f.options.map(o=>`<option value="${o.value}" ${o.value===val?"selected":""}>${o.label}</option>`).join("")}
-      </select></label>`;
-    }
+    if (f.type==="select") return this.selectHtml(f, value);
     if (f.type==="checkbox"){
       return `<label class="field checkbox"><input type="checkbox" id="f_${f.key}" ${value?"checked":""}/> ${f.label}</label>`;
     }
@@ -338,17 +404,6 @@ const App = {
     </div>`;
   },
 
-  onFormFieldChange(){
-    const of = this.openForm;
-    of.schema.forEach(f=>{
-      const el = document.getElementById("f_"+f.key);
-      if (!el) return;
-      of.values[f.key] = f.type==="checkbox" ? el.checked : el.value;
-    });
-    const el = document.getElementById("form-container");
-    if (el) el.outerHTML = this.renderFormInner();
-  },
-
   captureFormValues(){
     const of = this.openForm;
     const vals = {...of.values};
@@ -371,7 +426,7 @@ const App = {
       return;
     }
     if (method && method !== "equal_installment"){
-      alert("目前只支持「等额本息」方式反推利率,其他还款方式请手动填写利率(或先估一个数字,不影响系统按剩余期数线性推算本金)。");
+      alert("目前只支持「等额本息」方式反推利率,其他还款方式请手动填写利率。");
       return;
     }
     const r = impliedMonthlyRate(P0, A, n);
@@ -403,11 +458,17 @@ const App = {
     this.render();
   },
   editFamilyMembers(){
+    this.identityMenuOpen = false;
     const n1 = prompt("成员1 名称:", this.data.familyMembers[0] || "小桃");
-    if (n1===null) return;
+    if (n1===null) { this.render(); return; }
     const n2 = prompt("成员2 名称:", this.data.familyMembers[1] || "小饼");
-    if (n2===null) return;
+    if (n2===null) { this.render(); return; }
+    const oldNames = [...this.data.familyMembers];
     this.data.familyMembers = [n1.trim()||"小桃", n2.trim()||"小饼"];
+    // 如果当前身份是旧名字,同步改成新名字,否则身份会失效
+    if (this.currentUser === oldNames[0]) this.currentUser = this.data.familyMembers[0];
+    else if (this.currentUser === oldNames[1]) this.currentUser = this.data.familyMembers[1];
+    try { if (this.currentUser) localStorage.setItem("wealth-current-user", this.currentUser); } catch(e){}
     this.persist();
     this.render();
   },
@@ -496,9 +557,44 @@ const App = {
   },
   matchOwner(item){ return this.ownerFilter==="全部" || (item.owner||"共同")===this.ownerFilter; },
 
+  // ---------- 身份栏 ----------
+  renderIdentityBar(personalNetWorth){
+    if (!this.currentUser) return "";
+    const emoji = this.ownerEmoji(this.currentUser);
+    const other = this.data.familyMembers.find(n=>n!==this.currentUser);
+    const otherEmoji = other ? this.ownerEmoji(other) : "";
+    return `
+      <div class="identity-bar">
+        <div class="identity-pill" onclick="App.toggleIdentityMenu(event)">
+          <span>${emoji} ${this.currentUser}</span><span class="select-caret">▾</span>
+          ${this.identityMenuOpen ? `
+            <div class="identity-popover" onclick="event.stopPropagation()">
+              ${other ? `<div onclick="App.setCurrentUser('${other}')">切换为 ${otherEmoji} ${other}</div>` : ""}
+              <div onclick="App.editFamilyMembers()">✏️ 修改两人昵称</div>
+            </div>` : ""}
+        </div>
+        <div class="identity-networth">我的净值 <b style="color:${personalNetWorth>=0?'var(--sage)':'var(--rust)'};">${personalNetWorth>=0?'':'-'}¥${fmt(Math.abs(personalNetWorth))}</b></div>
+      </div>`;
+  },
+
   // ---------- render ----------
   render(){
+    if (!this.currentUser){
+      document.getElementById("root").innerHTML = `
+        <div class="wrap">
+          <div class="picker-screen">
+            <div class="title">今天是谁在用这个本子? 🌱</div>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
+              ${this.data.familyMembers.map(n=>`<button class="btn-primary" style="font-size:15px;padding:14px 26px;border-radius:14px;" onclick="App.setCurrentUser('${n}')">${this.ownerEmoji(n)} 我是${n}</button>`).join("")}
+            </div>
+            <div class="muted">选完之后随时可以点右上角名字切换或改名</div>
+          </div>
+        </div>`;
+      return;
+    }
+
     const totals = this.totals();
+    const personal = this.totals(this.currentUser);
     const TABS = [
       {id:"dashboard", label:"💰 总览"},
       {id:"loans", label:"🏦 贷款"},
@@ -519,12 +615,9 @@ const App = {
 
     document.getElementById("root").innerHTML = `
       <div class="wrap">
-        <div class="tabs" style="margin-bottom:2px;">
-          ${this.data.familyMembers.map(n=>`<span class="tab ${this.currentUser===n?'active':''}" style="border-color:var(--clay);${this.currentUser===n?'background:var(--clay);':''}" onclick="App.setCurrentUser('${n}')">${this.ownerEmoji(n)} 我是${n}</span>`).join("")}
-        </div>
+        ${this.renderIdentityBar(personal.netWorth)}
         <div class="tabs">
           ${TABS.map(t=>`<div class="tab ${this.tab===t.id?'active':''}" onclick="App.setTab('${t.id}')">${t.label}</div>`).join("")}
-          <div class="tab" onclick="App.editFamilyMembers()">⚙️ ${this.data.familyMembers.map(n=>this.ownerEmoji(n)+n).join(" / ")}</div>
         </div>
         ${body}
       </div>`;
@@ -581,7 +674,7 @@ const App = {
     if (netWorth>=0) progress=1;
     else if (baseline>=0) progress=0;
     else progress = Math.max(0, Math.min(1, (netWorth-baseline)/-baseline));
-    const size=180, stroke=14, r=(size-stroke)/2, circ=2*Math.PI*r, dash=circ*progress;
+    const size=150, stroke=12, r=(size-stroke)/2, circ=2*Math.PI*r, dash=circ*progress;
     const color = netWorth>=0 ? "var(--sage)" : "var(--clay)";
     return `<div class="ring-wrap">
       <svg width="${size}" height="${size}" style="transform:rotate(-90deg)">
@@ -590,8 +683,8 @@ const App = {
           stroke-dasharray="${dash} ${circ}"/>
       </svg>
       <div class="ring-center">
-        <div style="font-size:13px;color:var(--ink-soft);">${netWorth>=0?"🌳 已转正":"🌱 成长中"}</div>
-        <div style="font-family:'Noto Serif SC',serif;font-size:22px;font-weight:700;">${Math.round(progress*100)}%</div>
+        <div style="font-size:12px;color:var(--ink-soft);">${netWorth>=0?"🌳 已转正":"🌱 成长中"}</div>
+        <div style="font-family:'Noto Serif SC',serif;font-size:20px;font-weight:700;">${Math.round(progress*100)}%</div>
       </div>
     </div>`;
   },
@@ -607,49 +700,80 @@ const App = {
     upcoming.sort((a,b)=>(a.dueDay||99)-(b.dueDay||99));
     const insReminders = this.data.insurance.filter(i=>i.status==="active"&&i.paymentDate)
       .map(i=>({...i, days:daysUntilNext(i.paymentDate)})).sort((a,b)=>a.days-b.days);
+    const totalMonthly = t.loanMonthly + t.cardMonthly;
+    const cardUsed = t.cardInstallTotal + t.cardBillTotal;
+    const cardAvailable = t.cardLimitTotal - cardUsed;
 
-    return `
-      <div class="card" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:20px;">
-        ${this.renderRing(t.netWorth)}
-        <div style="flex:1;min-width:200px;">
-          <div style="font-size:13px;color:var(--ink-soft);">当前净值</div>
-          <div style="font-family:'Noto Serif SC',serif;font-size:36px;font-weight:900;color:${t.netWorth>=0?'var(--sage)':'var(--clay)'};">
-            ${t.netWorth>=0?"":"-"}¥${fmt(Math.abs(t.netWorth))}
+    const SUB_TABS = [
+      {id:"upcoming", label:"📅 本月待还"},
+      {id:"accounts", label:"🏠 账户总览"},
+      {id:"debts", label:"📋 负债明细"},
+      {id:"insurance", label:"🛡️ 保险提醒"},
+    ];
+    const subTab = this.dashboardSubTab || "upcoming";
+
+    let subBody = "";
+    if (subTab === "upcoming"){
+      subBody = `
+        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">📅 本月待还</div>
+        ${upcoming.length===0 ? '<div class="muted">暂无记录</div>' : upcoming.map(u=>`
+          <div class="card row-between" style="padding:10px 14px;">
+            <span>${u.name} · ${u.dueDay?u.dueDay+'号':'日期待定'}</span>
+            <span style="font-weight:600;">¥${fmt(u.amount)}</span>
+          </div>`).join("")}`;
+    } else if (subTab === "accounts"){
+      subBody = `
+        <div class="card" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:16px;">
+          ${this.renderRing(t.netWorth)}
+          <div style="flex:1;min-width:180px;">
+            <div style="font-size:12px;color:var(--ink-soft);">家庭净值</div>
+            <div style="font-family:'Noto Serif SC',serif;font-size:30px;font-weight:900;color:${t.netWorth>=0?'var(--sage)':'var(--clay)'};">
+              ${t.netWorth>=0?"":"-"}¥${fmt(Math.abs(t.netWorth))}
+            </div>
+            <div class="muted" style="margin-top:2px;">种下第一颗种子,一天天记录,总会长成一棵树 🌳</div>
+            <button class="btn-primary" style="margin-top:10px;" onclick="App.saveSnapshot()">📌 保存今日快照</button>
           </div>
-          <div class="muted" style="margin-top:4px;">种下第一颗种子,一天天记录,总会长成一棵树 🌳</div>
-          <button class="btn-primary" style="margin-top:12px;" onclick="App.saveSnapshot()">📌 保存今日快照</button>
         </div>
-      </div>
-      <div class="stat-grid">
-        <div class="stat" style="background:var(--sage-light);"><div class="stat-label">总资产</div><div class="stat-value" style="color:var(--sage);">¥${fmt(t.totalAssets)}</div></div>
-        <div class="stat" style="background:var(--rust-light);"><div class="stat-label">总负债</div><div class="stat-value" style="color:var(--rust);">¥${fmt(t.totalLiabilities)}</div></div>
-        <div class="stat" style="background:var(--clay-light);"><div class="stat-label">贷款月供</div><div class="stat-value" style="color:var(--clay);">¥${fmt(t.loanMonthly)}</div></div>
-        <div class="stat" style="background:var(--gold-light);"><div class="stat-label">信用卡月供</div><div class="stat-value" style="color:var(--gold);">¥${fmt(t.cardMonthly)}</div></div>
-        <div class="stat" style="background:var(--sage-light);"><div class="stat-label">家庭月收入</div><div class="stat-value" style="color:var(--sage);">¥${fmt(t.incomeMonthly)}</div></div>
-      </div>
-      <div style="margin:16px 0;">
-        <div style="font-size:15px;font-weight:700;margin-bottom:8px;">👪 按归属拆分</div>
-        <div class="stat-grid">
-          ${[...this.data.familyMembers, "共同"].map(owner=>{
+
+        <div class="stat-row3">
+          <div class="stat" style="background:var(--sage-light);"><div class="stat-label">总资产</div><div class="stat-value" style="color:var(--sage);">¥${fmt(t.totalAssets)}</div></div>
+          <div class="stat" style="background:var(--rust-light);"><div class="stat-label">总负债</div><div class="stat-value" style="color:var(--rust);">¥${fmt(t.totalLiabilities)}</div></div>
+          <div class="stat" style="background:var(--sage-light);"><div class="stat-label">家庭月收入</div><div class="stat-value" style="color:var(--sage);">¥${fmt(t.incomeMonthly)}</div></div>
+        </div>
+        <div class="stat-row3">
+          <div class="stat" style="background:var(--clay-light);"><div class="stat-label">贷款月供</div><div class="stat-value" style="color:var(--clay);">¥${fmt(t.loanMonthly)}</div></div>
+          <div class="stat" style="background:var(--gold-light);"><div class="stat-label">信用卡月供</div><div class="stat-value" style="color:var(--gold);">¥${fmt(t.cardMonthly)}</div></div>
+          <div class="stat" style="background:var(--rust-light);"><div class="stat-label">总月供</div><div class="stat-value" style="color:var(--rust);">¥${fmt(totalMonthly)}</div></div>
+        </div>
+        <div class="stat-row3">
+          <div class="stat" style="background:var(--gold-light);"><div class="stat-label">信用卡总额度</div><div class="stat-value" style="color:var(--gold);">¥${fmt(t.cardLimitTotal)}</div></div>
+          <div class="stat" style="background:var(--rust-light);"><div class="stat-label">已用额度</div><div class="stat-value" style="color:var(--rust);">¥${fmt(cardUsed)}</div></div>
+          <div class="stat" style="background:var(--sage-light);"><div class="stat-label">可用额度</div><div class="stat-value" style="color:var(--sage);">¥${fmt(cardAvailable)}</div></div>
+        </div>
+
+        <div class="person-cols">
+          ${this.data.familyMembers.map(owner=>{
             const ot = this.totals(owner);
-            return `<div class="stat" style="background:var(--card);border:1px solid var(--border);">
-              <div class="stat-label">${this.ownerEmoji(owner)} ${owner}</div>
-              <div class="stat-value" style="color:${ot.netWorth>=0?'var(--sage)':'var(--rust)'};">${ot.netWorth>=0?'':'-'}¥${fmt(Math.abs(ot.netWorth))}</div>
-              <div class="muted" style="margin-top:2px;">资产¥${fmt(ot.totalAssets)} · 负债¥${fmt(ot.totalLiabilities)} · 月收入¥${fmt(ot.incomeMonthly)}</div>
+            return `<div class="person-col">
+              <div class="p-head">${this.ownerEmoji(owner)} ${owner}</div>
+              <div class="p-line">净值 <b style="color:${ot.netWorth>=0?'var(--sage)':'var(--rust)'};">${ot.netWorth>=0?'':'-'}¥${fmt(Math.abs(ot.netWorth))}</b></div>
+              <div class="p-line">资产 <b>¥${fmt(ot.totalAssets)}</b></div>
+              <div class="p-line">负债 <b>¥${fmt(ot.totalLiabilities)}</b></div>
+              <div class="p-line">月收入 <b>¥${fmt(ot.incomeMonthly)}</b></div>
+              <div class="p-line">信用卡额度 <b>¥${fmt(ot.cardLimitTotal)}</b></div>
             </div>`;
           }).join("")}
-        </div>
-      </div>
-      <div style="margin:16px 0;">
+        </div>`;
+    } else if (subTab === "debts"){
+      subBody = `
         <div class="row-between" style="margin-bottom:8px;">
-          <div style="font-size:15px;font-weight:700;">🤖 AI 还款建议</div>
+          <div style="font-size:14px;font-weight:700;">🤖 AI 还款建议</div>
           <button class="btn-primary" onclick="App.getAiAdvice()">${this.aiLoading?"生成中...":"生成建议"}</button>
         </div>
         ${this.aiAdvice ? `<div class="card" style="white-space:pre-wrap;line-height:1.7;">${this.aiAdvice}</div>` : `<div class="muted">点「生成建议」,会把当前全部负债和收入情况发给 AI,给出还款优先级参考。</div>`}
-      </div>
-      <div style="margin:16px 0;">
-        <div style="font-size:15px;font-weight:700;margin-bottom:8px;">📋 全部负债明细(按利率从高到低)</div>
-        <div class="card" style="padding:8px 16px;">
+
+        <div style="font-size:14px;font-weight:700;margin:14px 0 8px;">📋 全部负债明细(按利率从高到低)</div>
+        <div class="card table-wrap" style="padding:8px 12px;">
           <table>
             <thead><tr><th>名称</th><th>归属</th><th>利率</th><th>剩余</th><th>月供</th></tr></thead>
             <tbody>
@@ -658,30 +782,26 @@ const App = {
               </tr>`).join("")}
             </tbody>
           </table>
-        </div>
+        </div>`;
+    } else if (subTab === "insurance"){
+      subBody = `
+        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">🛡️ 保险缴费提醒</div>
+        ${insReminders.length===0 ? '<div class="muted">暂无保单</div>' : insReminders.map(i=>`
+          <div class="card row-between" style="padding:10px 14px;">
+            <span>${i.name}</span><span style="font-weight:600;">${i.days}天后</span>
+          </div>`).join("")}`;
+    }
+
+    return `
+      <div class="tabs" style="margin-top:-4px;">
+        ${SUB_TABS.map(s=>`<div class="tab ${subTab===s.id?'active':''}" onclick="App.setDashboardSubTab('${s.id}')">${s.label}</div>`).join("")}
       </div>
-      <div class="two-col">
-        <div>
-          <div style="font-size:15px;font-weight:700;margin-bottom:8px;">📅 本月待还</div>
-          ${upcoming.length===0 ? '<div class="muted">暂无记录</div>' : upcoming.map(u=>`
-            <div class="card row-between" style="padding:10px 14px;">
-              <span>${u.name} · ${u.dueDay?u.dueDay+'号':'日期待定'}</span>
-              <span style="font-weight:600;">¥${fmt(u.amount)}</span>
-            </div>`).join("")}
-        </div>
-        <div>
-          <div style="font-size:15px;font-weight:700;margin-bottom:8px;">🛡️ 保险缴费提醒</div>
-          ${insReminders.length===0 ? '<div class="muted">暂无保单</div>' : insReminders.map(i=>`
-            <div class="card row-between" style="padding:10px 14px;">
-              <span>${i.name}</span><span style="font-weight:600;">${i.days}天后</span>
-            </div>`).join("")}
-        </div>
-      </div>`;
+      ${subBody}`;
   },
 
   renderLoans(){
     const today = new Date();
-    const addForm = (this.openForm && this.openForm.kind==="loan") ? this.renderFormInner() : "";
+    const addForm = (this.openForm && this.openForm.kind==="loan" && this.openForm.mode==="add") ? this.renderFormInner() : "";
     return `
       <div class="section-head">
         <div><div class="title">🏦 贷款</div><div class="subtitle">系统按利率与期数自动推算剩余本金,点 ✏️ 可校准为实际值</div></div>
@@ -690,24 +810,29 @@ const App = {
       ${this.renderOwnerChips()}
       ${addForm}
       ${this.data.loans.filter(l=>this.matchOwner(l)).map(l=>{
-        if (this.openForm && this.openForm.kind==="loan" && this.openForm.id===l.id) {
+        if (this.openForm && this.openForm.kind==="loan" && this.openForm.mode==="edit" && this.openForm.id===l.id) {
           return `<div class="card">${this.renderFormInner()}</div>`;
         }
         const remaining = computeRemaining(l, today);
         const elId = `loan__${l.id}__null`;
         const editable = this.canEdit(l);
-        return `<div class="card row-between">
-          <div>
+        return `<div class="card">
+          <div class="row-between">
             <div style="font-weight:600;font-size:15px;">${l.name} <span style="font-size:11px;font-weight:400;color:var(--ink-soft);">· ${this.ownerEmoji(l.owner||"共同")} ${l.owner||"共同"}</span> ${l.status==="paid"?'<span style="color:var(--sage);font-size:12px;">✅ 已结清</span>':''}</div>
-            <div class="muted" style="margin-top:2px;">年利率 ${l.rate}% · 月供¥${fmt(l.monthlyPayment)} · 还款日${l.dueDay}号 · ${l.note||""}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
             <div style="text-align:right;">
-              <div style="font-size:11px;color:var(--ink-faint);">📊 系统推算</div>
-              <div style="font-size:18px;font-weight:700;color:var(--rust);">¥${fmt(remaining)}</div>
+              <div style="font-size:10px;color:var(--ink-faint);">📊 系统推算</div>
+              <div style="font-size:17px;font-weight:700;color:var(--rust);">¥${fmt(remaining)}</div>
             </div>
+          </div>
+          <div class="chip-row">
+            <span class="chip">利率 <b>${l.rate}%</b></span>
+            <span class="chip">月供 <b>¥${fmt(l.monthlyPayment)}</b></span>
+            <span class="chip">还款日 <b>${l.dueDay}号</b></span>
+            ${l.note ? `<span class="chip">${l.note}</span>` : ""}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
             ${editable ? `
-              <span id="${elId}"><button class="icon-btn" onclick="App.toggleCalibrate('${elId}', ${remaining})">✏️</button></span>
+              <span id="${elId}"><button class="icon-btn" onclick="App.toggleCalibrate('${elId}', ${remaining})">✏️ 校准</button></span>
               <button class="icon-btn" onclick='App.openEditForm("loan", LOAN_SCHEMA, ${JSON.stringify(l)})'>编辑</button>
               <button class="icon-btn" onclick="App.toggleLoanPaid('${l.id}')">${l.status==="paid"?"恢复":"结清"}</button>
               <button class="icon-btn" onclick="App.deleteItem('loan','${l.id}')">🗑️</button>
@@ -719,7 +844,7 @@ const App = {
 
   renderCards(){
     const today = new Date();
-    const addForm = (this.openForm && this.openForm.kind==="card") ? this.renderFormInner() : "";
+    const addForm = (this.openForm && this.openForm.kind==="card" && this.openForm.mode==="add") ? this.renderFormInner() : "";
     return `
       <div class="section-head">
         <div><div class="title">💳 信用卡与分期</div><div class="subtitle">当期账单需手动更新,分期部分自动推算</div></div>
@@ -728,60 +853,73 @@ const App = {
       ${this.renderOwnerChips()}
       ${addForm}
       ${this.data.cards.filter(c=>this.matchOwner(c)).map(c=>{
-        if (this.openForm && this.openForm.kind==="card" && this.openForm.id===c.id) {
+        if (this.openForm && this.openForm.kind==="card" && this.openForm.mode==="edit" && this.openForm.id===c.id) {
           return `<div class="card">${this.renderFormInner()}</div>`;
         }
         const installSum = c.installments.reduce((s,i)=>s+computeRemaining(i,today),0);
         const cardTotal = installSum + (Number(c.currentBillManual)||0);
         const expanded = this.expandedCard===c.id;
         const billElId = `cardbill__${c.id}__null`;
-        let installRows = "";
+
+        let installList = "";
         if (c.installments.length>0){
-          installRows = `<table><thead><tr><th>分期</th><th>利率</th><th>推算余额</th><th>月还款</th><th></th></tr></thead><tbody>
+          installList = `<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
             ${c.installments.map(i=>{
               const bal = computeRemaining(i, today);
               const iElId = `installment__${i.id}__${c.id}`;
-              if (this.openForm && this.openForm.kind==="installment" && this.openForm.id===i.id) {
-                return `<tr><td colspan="5">${this.renderFormInner()}</td></tr>`;
+              if (this.openForm && this.openForm.kind==="installment" && this.openForm.mode==="edit" && this.openForm.id===i.id) {
+                return `<div class="form-card" style="margin:0;">${this.renderFormInner()}</div>`;
               }
-              return `<tr>
-                <td>${i.label}</td><td>${i.rate}%</td><td>¥${fmt(bal)}</td><td>¥${fmt(i.monthlyPayment)}</td>
-                <td style="display:flex;gap:6px;">
-                  ${this.canEdit(c) ? `
+              return `<div class="card" style="margin-bottom:0;padding:10px 12px;">
+                <div class="row-between">
+                  <b style="font-size:13px;">${i.label}</b>
+                  ${this.canEdit(c) ? `<div style="display:flex;gap:6px;">
                     <span id="${iElId}"><button class="icon-btn" onclick="App.toggleCalibrate('${iElId}', ${bal})">✏️</button></span>
                     <button class="icon-btn" onclick='App.openEditForm("installment", INSTALLMENT_SCHEMA, ${JSON.stringify(i)}, "${c.id}")'>编辑</button>
                     <button class="icon-btn" onclick="App.deleteItem('installment','${i.id}','${c.id}')">🗑️</button>
-                  ` : ""}
-                </td>
-              </tr>`;
+                  </div>` : ""}
+                </div>
+                <div class="chip-row">
+                  <span class="chip">利率 <b>${i.rate}%</b></span>
+                  <span class="chip">剩余 <b>¥${fmt(bal)}</b></span>
+                  <span class="chip">月供 <b>¥${fmt(i.monthlyPayment)}</b></span>
+                </div>
+              </div>`;
             }).join("")}
-          </tbody></table>`;
+          </div>`;
         }
         const addInstallForm = (this.openForm && this.openForm.kind==="installment" && this.openForm.mode==="add" && this.openForm.cardId===c.id) ? this.renderFormInner() : `<button class="btn-ghost" style="margin-top:10px;" onclick="App.openAddForm('installment', INSTALLMENT_SCHEMA, {method:'equal_installment', baseDate: todayStr()}, '${c.id}')">➕ 添加分期明细</button>`;
+
         return `<div class="card">
           <div class="row-between">
-            <div>
-              <div style="font-weight:600;font-size:15px;">${c.name} <span style="font-size:11px;font-weight:400;color:var(--ink-soft);">· ${this.ownerEmoji(c.owner||"共同")} ${c.owner||"共同"}</span></div>
-              <div class="muted" style="margin-top:2px;">额度¥${fmt(c.totalLimit)} · 还款日${c.dueDay}号 · ${c.note||""}</div>
+            <div style="font-weight:600;font-size:15px;">${c.name} <span style="font-size:11px;font-weight:400;color:var(--ink-soft);">· ${this.ownerEmoji(c.owner||"共同")} ${c.owner||"共同"}</span></div>
+            <div style="text-align:right;">
+              <div style="font-size:10px;color:var(--ink-faint);">合计欠款</div>
+              <div style="font-size:17px;font-weight:700;color:var(--rust);">¥${fmt(cardTotal)}</div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="text-align:right;"><div style="font-size:11px;color:var(--ink-faint);">合计欠款</div><div style="font-size:18px;font-weight:700;color:var(--rust);">¥${fmt(cardTotal)}</div></div>
-              ${this.canEdit(c) ? `
-                <button class="icon-btn" onclick='App.openEditForm("card", CARD_SCHEMA, ${JSON.stringify(c)})'>编辑</button>
-                <button class="icon-btn" onclick="App.deleteItem('card','${c.id}')">🗑️</button>
-              ` : ""}
-              <button class="icon-btn" onclick="App.toggleCardExpand('${c.id}')">${expanded?"收起":"展开"}</button>
-            </div>
+          </div>
+          <div class="chip-row">
+            <span class="chip">额度 <b>¥${fmt(c.totalLimit)}</b></span>
+            <span class="chip">还款日 <b>${c.dueDay}号</b></span>
+            ${c.installments.length ? `<span class="chip">分期 <b>${c.installments.length}笔</b></span>` : ""}
+            ${c.note ? `<span class="chip">${c.note}</span>` : ""}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            ${this.canEdit(c) ? `
+              <button class="icon-btn" onclick='App.openEditForm("card", CARD_SCHEMA, ${JSON.stringify(c)})'>编辑</button>
+              <button class="icon-btn" onclick="App.deleteItem('card','${c.id}')">🗑️</button>
+            ` : ""}
+            <button class="icon-btn" onclick="App.toggleCardExpand('${c.id}')">${expanded?"收起 ▲":"展开 ▼"}</button>
           </div>
           ${expanded ? `
           <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-            <div class="row-between" style="margin-bottom:8px;">
+            <div class="row-between">
               <span style="font-size:13px;">当期账单/未分期欠款:</span>
               <span style="display:flex;align-items:center;gap:8px;"><b>¥${fmt(c.currentBillManual)}</b>
                 ${this.canEdit(c) ? `<span id="${billElId}"><button class="icon-btn" onclick="App.toggleCalibrate('${billElId}', ${c.currentBillManual})">✏️</button></span>` : ""}
               </span>
             </div>
-            ${installRows}
+            ${installList}
             ${this.canEdit(c) ? addInstallForm : ""}
           </div>` : ""}
         </div>`;
@@ -789,7 +927,7 @@ const App = {
   },
 
   renderIncome(){
-    const addForm = (this.openForm && this.openForm.kind==="income") ? this.renderFormInner() : "";
+    const addForm = (this.openForm && this.openForm.kind==="income" && this.openForm.mode==="add") ? this.renderFormInner() : "";
     const freqLabel = {monthly:"每月", annual:"每年"};
     return `
       <div class="section-head">
@@ -800,12 +938,16 @@ const App = {
       ${addForm}
       ${(this.data.income||[]).length===0 ? '<div class="muted">还没有收入记录,点右上角添加第一项吧。</div>' : ""}
       ${(this.data.income||[]).filter(i=>this.matchOwner(i)).map(i=>{
-        if (this.openForm && this.openForm.kind==="income" && this.openForm.id===i.id) return `<div class="card">${this.renderFormInner()}</div>`;
+        if (this.openForm && this.openForm.kind==="income" && this.openForm.mode==="edit" && this.openForm.id===i.id) return `<div class="card">${this.renderFormInner()}</div>`;
         const editable = this.canEdit(i);
         return `<div class="card row-between">
           <div>
-            <div style="font-weight:600;">${i.name} <span style="font-size:11px;color:var(--ink-soft);font-weight:400;">· ${freqLabel[i.frequency]||i.frequency} · ${this.ownerEmoji(i.owner||"共同")} ${i.owner||"共同"}</span></div>
-            <div class="muted">${i.note||""}</div>
+            <div style="font-weight:600;">${i.name}</div>
+            <div class="chip-row">
+              <span class="chip">${this.ownerEmoji(i.owner||"共同")} ${i.owner||"共同"}</span>
+              <span class="chip">${freqLabel[i.frequency]||i.frequency}</span>
+              ${i.note ? `<span class="chip">${i.note}</span>` : ""}
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <div style="font-size:18px;font-weight:700;color:var(--sage);">¥${fmt(i.amount)}</div>
@@ -819,7 +961,7 @@ const App = {
   },
 
   renderAssets(){
-    const addForm = (this.openForm && this.openForm.kind==="asset") ? this.renderFormInner() : "";
+    const addForm = (this.openForm && this.openForm.kind==="asset" && this.openForm.mode==="add") ? this.renderFormInner() : "";
     const catLabel = {cash:"现金/存款", fixed:"固定资产", invest:"投资"};
     return `
       <div class="section-head">
@@ -830,11 +972,15 @@ const App = {
       ${addForm}
       ${this.data.assets.length===0 ? '<div class="muted">还没有资产记录,点右上角添加第一项吧。</div>' : ""}
       ${this.data.assets.filter(a=>this.matchOwner(a)).map(a=>{
-        if (this.openForm && this.openForm.kind==="asset" && this.openForm.id===a.id) return `<div class="card">${this.renderFormInner()}</div>`;
+        if (this.openForm && this.openForm.kind==="asset" && this.openForm.mode==="edit" && this.openForm.id===a.id) return `<div class="card">${this.renderFormInner()}</div>`;
         return `<div class="card row-between">
           <div>
-            <div style="font-weight:600;">${a.name} <span style="font-size:11px;color:var(--ink-soft);font-weight:400;">· ${catLabel[a.category]||a.category} · ${this.ownerEmoji(a.owner||"共同")} ${a.owner||"共同"}</span></div>
-            <div class="muted">更新于 ${a.lastUpdated||""} ${a.note||""}</div>
+            <div style="font-weight:600;">${a.name}</div>
+            <div class="chip-row">
+              <span class="chip">${this.ownerEmoji(a.owner||"共同")} ${a.owner||"共同"}</span>
+              <span class="chip">${catLabel[a.category]||a.category}</span>
+              <span class="chip">更新于 ${a.lastUpdated||""}</span>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <div style="font-size:18px;font-weight:700;color:var(--sage);">¥${fmt(a.currentValue)}</div>
@@ -848,7 +994,7 @@ const App = {
   },
 
   renderInsurance(){
-    const addForm = (this.openForm && this.openForm.kind==="insurance") ? this.renderFormInner() : "";
+    const addForm = (this.openForm && this.openForm.kind==="insurance" && this.openForm.mode==="add") ? this.renderFormInner() : "";
     return `
       <div class="section-head">
         <div><div class="title">🛡️ 保险</div><div class="subtitle">消费型只做提醒;储蓄/年金型可选择是否计入净值</div></div>
@@ -858,11 +1004,18 @@ const App = {
       ${addForm}
       ${this.data.insurance.length===0 ? '<div class="muted">还没有保单记录,点右上角添加第一份吧。</div>' : ""}
       ${this.data.insurance.filter(i=>this.matchOwner(i)).map(i=>{
-        if (this.openForm && this.openForm.kind==="insurance" && this.openForm.id===i.id) return `<div class="card">${this.renderFormInner()}</div>`;
+        if (this.openForm && this.openForm.kind==="insurance" && this.openForm.mode==="edit" && this.openForm.id===i.id) return `<div class="card">${this.renderFormInner()}</div>`;
         return `<div class="card row-between">
           <div>
-            <div style="font-weight:600;">${i.name} <span style="font-size:11px;color:var(--ink-soft);font-weight:400;">· ${i.type==="savings"?"储蓄/年金型":"消费型"} · ${this.ownerEmoji(i.owner||"共同")} ${i.owner||"共同"}</span></div>
-            <div class="muted">保额¥${fmt(i.coverageAmount)} · 年缴¥${fmt(i.annualPremium)} · 缴费日${i.paymentDate||""} · ${i.status==="active"?"生效中":"已终止"}</div>
+            <div style="font-weight:600;">${i.name}</div>
+            <div class="chip-row">
+              <span class="chip">${this.ownerEmoji(i.owner||"共同")} ${i.owner||"共同"}</span>
+              <span class="chip">${i.type==="savings"?"储蓄/年金型":"消费型"}</span>
+              <span class="chip">保额 <b>¥${fmt(i.coverageAmount)}</b></span>
+              <span class="chip">年缴 <b>¥${fmt(i.annualPremium)}</b></span>
+              <span class="chip">缴费日 ${i.paymentDate||""}</span>
+              <span class="chip">${i.status==="active"?"生效中":"已终止"}</span>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             ${(i.type==="savings"&&i.includeInNetWorth) ? `<div style="font-size:18px;font-weight:700;color:var(--sage);">¥${fmt(i.cashValue)}</div>` : ""}
@@ -878,16 +1031,16 @@ const App = {
   renderHistory(){
     if (this.data.history.length===0){
       return `
-        <div class="section-head"><div><div class="title">📊 净值趋势</div><div class="subtitle">每次在总览页保存快照,这里就会多一个点</div></div></div>
+        <div class="section-head"><div><div class="title">📊 净值趋势</div><div class="subtitle">记录每次的家庭净值(总资产-总负债),连起来就是这段时间的变化曲线。在总览页点「保存今日快照」就会往这里加一个点</div></div></div>
         <div class="muted">还没有历史快照,去总览页点「保存今日快照」开始记录吧。</div>`;
     }
     const rows = [...this.data.history].reverse().map(h=>`
       <tr><td>${h.date}</td><td>¥${fmt(h.totalAssets)}</td><td>¥${fmt(h.totalLiabilities)}</td>
       <td style="color:${h.netWorth>=0?'var(--sage)':'var(--rust)'};font-weight:600;">¥${fmt(h.netWorth)}</td></tr>`).join("");
     return `
-      <div class="section-head"><div><div class="title">📊 净值趋势</div><div class="subtitle">每次在总览页保存快照,这里就会多一个点</div></div></div>
-      <div class="card" style="height:280px;padding:16px 8px;"><canvas id="trendChart"></canvas></div>
-      <table style="margin-top:12px;"><thead><tr><th>日期</th><th>总资产</th><th>总负债</th><th>净值</th></tr></thead><tbody>${rows}</tbody></table>`;
+      <div class="section-head"><div><div class="title">📊 净值趋势</div><div class="subtitle">家庭净值(总资产-总负债)随时间的变化,每次保存快照多一个点</div></div></div>
+      <div class="card" style="height:260px;padding:16px 8px;"><canvas id="trendChart"></canvas></div>
+      <div class="table-wrap"><table style="margin-top:12px;"><thead><tr><th>日期</th><th>总资产</th><th>总负债</th><th>净值</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   },
 
   drawChart(){
@@ -918,6 +1071,14 @@ const App = {
     });
   },
 };
+
+document.addEventListener("click", function(){
+  document.querySelectorAll(".select-panel").forEach(p=>{ p.style.display = "none"; });
+  if (typeof App !== "undefined" && App.identityMenuOpen){
+    App.identityMenuOpen = false;
+    App.render();
+  }
+});
 
 App.init();
 </script>
