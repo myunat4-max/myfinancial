@@ -124,8 +124,8 @@
 
 <script>
 /* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
 function resolveSupabaseUrl(raw){
@@ -136,7 +136,7 @@ function resolveSupabaseUrl(raw){
   if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
   return v;
 }
-const APP_VERSION = "2026-08-20-v13";
+const APP_VERSION = "2026-08-20-v14";
 console.log("净值追踪 版本:", APP_VERSION);
 const RESOLVED_SUPABASE_URL = resolveSupabaseUrl(SUPABASE_URL);
 const sb = (RESOLVED_SUPABASE_URL.startsWith("http")) ? supabase.createClient(RESOLVED_SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -313,6 +313,7 @@ const App = {
   lastSaveOk: null,
   identityMenuOpen: false,
   dashboardSubTab: "upcoming",
+  debtsExpanded: false,
   aiAdvice: null,
   aiLoading: false,
   openForm: null, // {kind, mode:'add'|'edit', id, cardId, schema, values}
@@ -405,6 +406,7 @@ const App = {
   setDashboardSubTab(t){ this.dashboardSubTab = t; this.render(); },
   setUpcomingFilter(f){ this.upcomingFilter = f; this.render(); },
   setDebtSort(s){ this.debtSort = s; this.render(); },
+  toggleDebtsExpanded(){ this.debtsExpanded = !this.debtsExpanded; this.render(); },
 
   totals(ownerFilter){
     const today = new Date();
@@ -1019,16 +1021,25 @@ const App = {
             </span>
           </div>
         </div>
-        <div class="card table-wrap" style="padding:8px 12px;">
-          <table>
-            <thead><tr><th>名称</th><th>归属</th><th>还款日</th><th>利率</th><th>剩余期数</th><th>剩余</th><th>月供</th></tr></thead>
-            <tbody>
-              ${this.allDebtRows(sortBy).map(r=>`<tr>
-                <td>${r.name}</td><td>${this.ownerEmoji(r.owner)} ${r.owner}</td><td>${r.dueDay?r.dueDay+'号':'-'}</td><td>${r.rate!=null?r.rate+'%':'-'}</td><td>${r.termsLeft!=null?r.termsLeft+'期':'—'}</td><td>¥${fmt(r.remaining)}</td><td>¥${fmt(r.monthlyPayment)}</td>
-              </tr>`).join("")}
-            </tbody>
-          </table>
-        </div>`;
+        ${(()=>{
+          const rows = this.allDebtRows(sortBy);
+          const expanded = this.debtsExpanded;
+          const visible = expanded ? rows : rows.slice(0,6);
+          const cards = visible.map(r=>`<div class="bill-card" style="padding:12px 14px;">
+            <div class="row-between" style="align-items:center;">
+              <div style="font-weight:700;font-size:14px;">${this.ownerEmoji(r.owner)} ${r.name}</div>
+              <div class="ss-value" style="font-size:15px;color:var(--ink);">¥${fmt(r.remaining)}</div>
+            </div>
+            <div class="stat-strip" style="margin-top:8px;gap:16px;">
+              <div><div class="ss-label">还款日</div><div class="ss-value" style="font-size:13px;">${r.dueDay?r.dueDay+'号':'-'}</div></div>
+              <div><div class="ss-label">利率</div><div class="ss-value" style="font-size:13px;">${r.rate!=null?r.rate+'%':'-'}</div></div>
+              <div><div class="ss-label">剩余期数</div><div class="ss-value" style="font-size:13px;">${r.termsLeft!=null?r.termsLeft+'期':'—'}</div></div>
+              <div><div class="ss-label">月供</div><div class="ss-value" style="font-size:13px;">¥${fmt(r.monthlyPayment)}</div></div>
+            </div>
+          </div>`).join("");
+          const toggle = rows.length>6 ? `<button class="btn-ghost" style="width:100%;" onclick="App.toggleDebtsExpanded()">${expanded?"收起 ▲":`展开查看全部 ${rows.length} 条 ▼`}</button>` : "";
+          return cards + toggle;
+        })()}`;
     } else if (subTab === "insurance"){
       subBody = `
         ${insReminders.length===0 ? '<div class="muted">暂无保单</div>' : insReminders.map(i=>`
