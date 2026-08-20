@@ -27,7 +27,7 @@
   body{margin:0;font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--ink);}
   .wrap{max-width:920px;margin:0 auto;padding:16px 16px 100px;}
   /* 第一层:主导航,纯文字+选中下划线,不用底色 */
-  .toptabs{display:flex;gap:18px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;scrollbar-width:none;-ms-overflow-style:none;}
+  .toptabs{display:flex;gap:16px;overflow-x:auto;padding-bottom:4px;margin-bottom:20px;scrollbar-width:none;-ms-overflow-style:none;}
   .toptabs::-webkit-scrollbar{display:none;}
   .toptab{background:none;border:none;padding:4px 2px 0;cursor:pointer;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;}
   .toptab-label{font-size:13px;color:var(--unsel-text);}
@@ -37,7 +37,7 @@
   /* 第二层:总览下的4个子tab,始终有圆角框 */
   .subtabs{display:flex;gap:8px;overflow-x:auto;margin:0 0 14px;scrollbar-width:none;-ms-overflow-style:none;}
   .subtabs::-webkit-scrollbar{display:none;}
-  .subtab{padding:7px 13px;border-radius:16px;font-size:13px;cursor:pointer;white-space:nowrap;background:var(--unsel-bg);border:1px solid var(--unsel-border);color:var(--unsel-text);flex-shrink:0;}
+  .subtab{padding:5px 10px;border-radius:14px;font-size:12px;cursor:pointer;white-space:nowrap;background:var(--unsel-bg);border:1px solid var(--unsel-border);color:var(--unsel-text);flex-shrink:0;}
   .subtab.active{background:var(--sel-bg);border-color:var(--sel-bg);color:var(--sel-text);font-weight:700;}
   /* 第三层:归属/排序筛选,纯文字+选中波浪线,不用框 */
   .wavetabs{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;}
@@ -91,7 +91,7 @@
   .select-option.selected{background:var(--dewwhite);font-weight:600;}
   /* 身份栏 */
   .identity-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
-  .identity-pill{position:relative;display:inline-flex;align-items:center;gap:6px;background:var(--card-soft);border:none;border-radius:20px;padding:6px 12px 6px 10px;cursor:pointer;font-size:14px;font-weight:600;}
+  .identity-pill{position:relative;display:inline-flex;align-items:center;gap:6px;background:var(--card-soft);border:none;border-radius:18px;padding:5px 10px 5px 9px;cursor:pointer;font-size:13px;font-weight:600;}
   .identity-popover{position:absolute;top:110%;left:0;background:#fff;border:none;border-radius:10px;box-shadow:0 6px 20px rgba(60,40,20,0.12);min-width:160px;z-index:50;overflow:hidden;}
   .identity-popover div{padding:10px 14px;font-size:13px;font-weight:400;cursor:pointer;color:var(--ink);white-space:nowrap;}
   .identity-popover div:hover{background:var(--card-soft);}
@@ -120,8 +120,8 @@
 
 <script>
 /* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
 function resolveSupabaseUrl(raw){
@@ -132,7 +132,7 @@ function resolveSupabaseUrl(raw){
   if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
   return v;
 }
-const APP_VERSION = "2026-08-20-v9";
+const APP_VERSION = "2026-08-20-v10";
 console.log("净值追踪 版本:", APP_VERSION);
 const RESOLVED_SUPABASE_URL = resolveSupabaseUrl(SUPABASE_URL);
 const sb = (RESOLVED_SUPABASE_URL.startsWith("http")) ? supabase.createClient(RESOLVED_SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -731,6 +731,13 @@ const App = {
     const emoji = this.ownerEmoji(this.currentUser);
     const other = this.data.familyMembers.find(n=>n!==this.currentUser);
     const otherEmoji = other ? this.ownerEmoji(other) : "";
+    const importBtns = {
+      loans: `<button class="btn-ghost" style="padding:5px 10px;font-size:12px;" onclick="App.triggerImport('loan', LOAN_SCHEMA)">📥 导入</button>`,
+      cards: `<button class="btn-ghost" style="padding:5px 10px;font-size:12px;" onclick="App.triggerImport('card', CARD_SCHEMA)">📥 导入</button>`,
+      income: `<button class="btn-ghost" style="padding:5px 10px;font-size:12px;" onclick="App.triggerImport('income', INCOME_SCHEMA)">📥 导入</button>`,
+      assets: `<button class="btn-ghost" style="padding:5px 10px;font-size:12px;" onclick="App.triggerImport('asset', ASSET_SCHEMA)">📥 导入</button>`,
+    };
+    const importBtn = importBtns[this.tab] || "";
     return `
       <div class="identity-bar">
         <div class="identity-pill" onclick="App.toggleIdentityMenu(event)">
@@ -741,7 +748,10 @@ const App = {
               <div onclick="App.editFamilyMembers()">✏️ 修改两人昵称</div>
             </div>` : ""}
         </div>
-        <div class="identity-networth">我的净值 <b style="color:${personalNetWorth>=0?'var(--positive)':'var(--negative)'};">${personalNetWorth>=0?'':'-'}¥${fmt(Math.abs(personalNetWorth))}</b></div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${importBtn}
+          <div class="identity-networth">我的净值 <b style="color:${personalNetWorth>=0?'var(--positive)':'var(--negative)'};">${personalNetWorth>=0?'':'-'}¥${fmt(Math.abs(personalNetWorth))}</b></div>
+        </div>
       </div>`;
   },
 
@@ -854,8 +864,10 @@ const App = {
     const upcoming = [];
     this.data.loans.filter(l=>l.status!=="paid").forEach(l=>upcoming.push({name:l.name, dueDay:l.dueDay, amount:l.monthlyPayment, owner:l.owner||"共同"}));
     this.data.cards.forEach(c=>{
-      const s = c.installments.reduce((s2,i)=>s2+(Number(i.monthlyPayment)||0),0);
-      if (s>0) upcoming.push({name:c.name, dueDay:c.dueDay, amount:s, owner:c.owner||"共同"});
+      const instS = c.installments.reduce((s2,i)=>s2+(Number(i.monthlyPayment)||0),0);
+      const billS = Number(c.currentBillManual)||0;
+      const total = instS + billS;
+      if (total>0) upcoming.push({name:c.name, dueDay:c.dueDay, amount:total, owner:c.owner||"共同"});
     });
     upcoming.sort((a,b)=>(a.dueDay||99)-(b.dueDay||99));
     const insReminders = this.data.insurance.filter(i=>i.status==="active"&&i.paymentDate)
@@ -882,6 +894,7 @@ const App = {
         return u.owner===this.currentUser || u.owner==="共同"; // mine
       });
       subBody = `
+        <div class="subtitle" style="color:#999999;margin-bottom:8px;">汇总所有生效中贷款的月供,以及每张信用卡的分期还款+当期账单,按还款日排序</div>
         <div class="wavetabs">
           <span class="wavetab ${filter==='mine'?'active':''}" onclick="App.setUpcomingFilter('mine')">
             <span>${this.ownerEmoji(this.currentUser)} 我的+共同</span>
@@ -1004,11 +1017,8 @@ const App = {
     const addForm = (this.openForm && this.openForm.kind==="loan" && this.openForm.mode==="add") ? this.renderFormInner() : "";
     return `
       <div class="section-head">
-        <div><div class="title">🏦 贷款</div><div class="subtitle">系统按利率与期数自动推算剩余本金,点 ✏️ 可校准为实际值</div></div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn-ghost" onclick="App.triggerImport('loan', LOAN_SCHEMA)">📥 导入CSV</button>
-          <button class="btn-primary" onclick="App.openAddForm('loan', LOAN_SCHEMA, {method:'equal_installment', baseDate: todayStr(), status:'active'})">➕ 添加贷款</button>
-        </div>
+        <div class="subtitle" style="color:#999999;">系统按利率与期数自动推算剩余本金,点 ✏️ 可校准为实际值</div>
+        <button class="btn-primary" onclick="App.openAddForm('loan', LOAN_SCHEMA, {method:'equal_installment', baseDate: todayStr(), status:'active'})">➕ 添加贷款</button>
       </div>
       ${this.renderOwnerChips()}
       ${addForm}
@@ -1047,11 +1057,8 @@ const App = {
     const addForm = (this.openForm && this.openForm.kind==="card" && this.openForm.mode==="add") ? this.renderFormInner() : "";
     return `
       <div class="section-head">
-        <div><div class="title">💳 信用卡与分期</div><div class="subtitle">当期账单需手动更新,分期部分自动推算</div></div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn-ghost" onclick="App.triggerImport('card', CARD_SCHEMA)">📥 导入CSV</button>
-          <button class="btn-primary" onclick="App.openAddForm('card', CARD_SCHEMA, {})">➕ 添加信用卡</button>
-        </div>
+        <div class="subtitle" style="color:#999999;">当期账单需手动更新,分期部分自动推算</div>
+        <button class="btn-primary" onclick="App.openAddForm('card', CARD_SCHEMA, {})">➕ 添加信用卡</button>
       </div>
       ${this.renderOwnerChips()}
       ${addForm}
@@ -1129,11 +1136,8 @@ const App = {
     const freqLabel = {monthly:"每月", annual:"每年"};
     return `
       <div class="section-head">
-        <div><div class="title">💵 收入</div><div class="subtitle">工资、房租等,各自的收入各自记,家庭共同收入标共同</div></div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn-ghost" onclick="App.triggerImport('income', INCOME_SCHEMA)">📥 导入CSV</button>
-          <button class="btn-primary" onclick="App.openAddForm('income', INCOME_SCHEMA, {frequency:'monthly'})">➕ 添加收入</button>
-        </div>
+        <div class="subtitle" style="color:#999999;">工资、房租等,各自的收入各自记,家庭共同收入标共同</div>
+        <button class="btn-primary" onclick="App.openAddForm('income', INCOME_SCHEMA, {frequency:'monthly'})">➕ 添加收入</button>
       </div>
       ${this.renderOwnerChips()}
       ${addForm}
@@ -1166,11 +1170,8 @@ const App = {
     const catLabel = {cash:"现金/存款", fixed:"固定资产", invest:"投资"};
     return `
       <div class="section-head">
-        <div><div class="title">📈 资产</div><div class="subtitle">现金、固定资产、投资,几天到一两个月核对一次即可</div></div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn-ghost" onclick="App.triggerImport('asset', ASSET_SCHEMA)">📥 导入CSV</button>
-          <button class="btn-primary" onclick="App.openAddForm('asset', ASSET_SCHEMA, {category:'cash', lastUpdated: todayStr()})">➕ 添加资产</button>
-        </div>
+        <div class="subtitle" style="color:#999999;">现金、固定资产、投资,几天到一两个月核对一次即可</div>
+        <button class="btn-primary" onclick="App.openAddForm('asset', ASSET_SCHEMA, {category:'cash', lastUpdated: todayStr()})">➕ 添加资产</button>
       </div>
       ${this.renderOwnerChips()}
       ${addForm}
@@ -1201,7 +1202,7 @@ const App = {
     const addForm = (this.openForm && this.openForm.kind==="insurance" && this.openForm.mode==="add") ? this.renderFormInner() : "";
     return `
       <div class="section-head">
-        <div><div class="title">🛡️ 保险</div><div class="subtitle">消费型只做提醒;储蓄/年金型可选择是否计入净值</div></div>
+        <div class="subtitle" style="color:#999999;">消费型只做提醒;储蓄/年金型可选择是否计入净值</div>
         <button class="btn-primary" onclick="App.openAddForm('insurance', INSURANCE_SCHEMA, {type:'consumption', status:'active'})">➕ 添加保单</button>
       </div>
       ${this.renderOwnerChips()}
