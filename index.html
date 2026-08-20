@@ -107,8 +107,8 @@
 
 <script>
 /* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
 const sb = (SUPABASE_URL.startsWith("http")) ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -287,12 +287,12 @@ const App = {
       } catch(e){
         console.error("Supabase 读取失败,本次修改不会保存", e);
         this.dbConnected = false;
-        this.dbError = (e && e.message) || String(e);
+        this.dbError = ((e && e.message) || String(e)) + " | 当前页面读到的 SUPABASE_URL = " + SUPABASE_URL;
         this.data = seedData();
       }
     } else {
       this.dbConnected = false;
-      this.dbError = "SUPABASE_URL / SUPABASE_ANON_KEY 还是默认占位值,没有填成你自己的项目信息";
+      this.dbError = "当前页面读到的 SUPABASE_URL = \"" + SUPABASE_URL + "\"(如果这里显示的还是 YOUR_SUPABASE_URL,说明你改的文件没有真正部署到这个网址上)";
       this.data = seedData();
     }
     if (!this.data.income) this.data.income = [];
