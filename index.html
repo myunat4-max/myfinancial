@@ -120,8 +120,8 @@
 
 <script>
 /* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
 function resolveSupabaseUrl(raw){
@@ -132,7 +132,7 @@ function resolveSupabaseUrl(raw){
   if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
   return v;
 }
-const APP_VERSION = "2026-08-20-v11";
+const APP_VERSION = "2026-08-20-v12";
 console.log("净值追踪 版本:", APP_VERSION);
 const RESOLVED_SUPABASE_URL = resolveSupabaseUrl(SUPABASE_URL);
 const sb = (RESOLVED_SUPABASE_URL.startsWith("http")) ? supabase.createClient(RESOLVED_SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -171,6 +171,15 @@ function daysUntilNext(monthDay){
   let next = new Date(now.getFullYear(), m-1, d);
   if (next < now) next = new Date(now.getFullYear()+1, m-1, d);
   return Math.ceil((next-now)/86400000);
+}
+function daysUntilDueDay(dueDay){
+  if (!dueDay) return 9999; // 日期待定的排最后
+  const now = new Date();
+  let next = new Date(now.getFullYear(), now.getMonth(), dueDay);
+  now.setHours(0,0,0,0);
+  next.setHours(0,0,0,0);
+  if (next < now) next = new Date(now.getFullYear(), now.getMonth()+1, dueDay);
+  return Math.round((next-now)/86400000);
 }
 function impliedMonthlyRate(P0, A, n){
   if (!(n>0) || !(P0>0) || !(A>0)) return null;
@@ -645,7 +654,11 @@ const App = {
       else this.data.loans = this.data.loans.map(x=>x.id===of.id?{...x,...vals}:x);
     } else if (of.kind==="card"){
       if (of.mode==="add") this.data.cards.push({...vals, id:"c"+Date.now(), installments:[]});
-      else this.data.cards = this.data.cards.map(x=>x.id===of.id?{...x,...vals}:x);
+      else this.data.cards = this.data.cards.map(x=>{
+        if (x.id!==of.id) return x;
+        const billChanged = Number(vals.currentBillManual) !== Number(x.currentBillManual);
+        return {...x, ...vals, billChecked: billChanged ? false : x.billChecked};
+      });
     } else if (of.kind==="installment"){
       const card = this.data.cards.find(c=>c.id===of.cardId);
       if (of.mode==="add") card.installments.push({...vals, id:"i"+Date.now()});
@@ -687,7 +700,12 @@ const App = {
     if (isNaN(val)) return;
     if (kind==="loan") this.data.loans = this.data.loans.map(x=>x.id===id?{...x, basePrincipal:val, baseDate:todayStr()}:x);
     if (kind==="installment"){ const card=this.data.cards.find(c=>c.id===cardId); card.installments=card.installments.map(x=>x.id===id?{...x, basePrincipal:val, baseDate:todayStr()}:x); }
-    if (kind==="cardbill") this.data.cards = this.data.cards.map(x=>x.id===id?{...x, currentBillManual:val}:x);
+    if (kind==="cardbill") this.data.cards = this.data.cards.map(x=>x.id===id?{...x, currentBillManual:val, billChecked:false}:x);
+    await this.persist(); this.render();
+  },
+
+  async toggleBillChecked(cardId){
+    this.data.cards = this.data.cards.map(x=>x.id===cardId?{...x, billChecked:!x.billChecked}:x);
     await this.persist(); this.render();
   },
 
@@ -862,14 +880,15 @@ const App = {
   renderDashboard(t){
     const today = new Date();
     const upcoming = [];
-    this.data.loans.filter(l=>l.status!=="paid").forEach(l=>upcoming.push({name:l.name, dueDay:l.dueDay, amount:l.monthlyPayment, owner:l.owner||"共同"}));
+    this.data.loans.filter(l=>l.status!=="paid").forEach(l=>upcoming.push({key:`loan_${l.id}`, name:l.name, dueDay:l.dueDay, amount:l.monthlyPayment, owner:l.owner||"共同", checkable:false}));
     this.data.cards.forEach(c=>{
       const instS = c.installments.reduce((s2,i)=>s2+(Number(i.monthlyPayment)||0),0);
       const billS = Number(c.currentBillManual)||0;
-      const total = instS + billS;
-      if (total>0) upcoming.push({name:c.name, dueDay:c.dueDay, amount:total, owner:c.owner||"共同"});
+      if (instS>0) upcoming.push({key:`cardinst_${c.id}`, name:`${c.name}·分期`, dueDay:c.dueDay, amount:instS, owner:c.owner||"共同", checkable:false});
+      if (billS>0) upcoming.push({key:`cardbill_${c.id}`, name:`${c.name}·当期账单`, dueDay:c.dueDay, amount:billS, owner:c.owner||"共同", checkable:true, cardId:c.id, checked:!!c.billChecked});
     });
-    upcoming.sort((a,b)=>(a.dueDay||99)-(b.dueDay||99));
+    upcoming.forEach(u=>{ u.daysLeft = daysUntilDueDay(u.dueDay); });
+    upcoming.sort((a,b)=>a.daysLeft-b.daysLeft);
     const insReminders = this.data.insurance.filter(i=>i.status==="active"&&i.paymentDate)
       .map(i=>({...i, days:daysUntilNext(i.paymentDate)})).sort((a,b)=>a.days-b.days);
     const totalMonthly = t.loanMonthly + t.cardMonthly;
@@ -894,7 +913,7 @@ const App = {
         return u.owner===this.currentUser || u.owner==="共同"; // mine
       });
       subBody = `
-        <div class="subtitle" style="color:#999999;margin-bottom:8px;">汇总所有生效中贷款的月供,以及每张信用卡的分期还款+当期账单,按还款日排序</div>
+        <div class="subtitle" style="color:#999999;margin-bottom:8px;">按实际到期天数排序;贷款和信用卡分期是系统自动推算的,不用打勾;信用卡当期账单是手动填的数字,还完了可以打勾提醒自己,不会影响任何计算</div>
         <div class="wavetabs">
           <span class="wavetab ${filter==='mine'?'active':''}" onclick="App.setUpcomingFilter('mine')">
             <span>${this.ownerEmoji(this.currentUser)} 我的+共同</span>
@@ -912,13 +931,14 @@ const App = {
         ${filtered.length===0 ? '<div class="muted">暂无记录</div>' : `
         <div class="card table-wrap" style="padding:6px 10px;">
           <table>
-            <thead><tr><th style="text-align:center;">who</th><th style="text-align:center;">日期</th><th style="text-align:center;">待还银行/贷款</th><th style="text-align:center;">钱钱</th></tr></thead>
+            <thead><tr><th style="text-align:center;">who</th><th style="text-align:center;">日期</th><th style="text-align:center;">待还银行/贷款</th><th style="text-align:center;">钱钱</th><th style="text-align:center;">✓</th></tr></thead>
             <tbody>
-              ${filtered.map(u=>`<tr>
+              ${filtered.map(u=>`<tr style="${u.checked?'opacity:0.5;':''}">
                 <td style="text-align:center;">${this.ownerEmoji(u.owner)}</td>
-                <td style="text-align:center;">${u.dueDay?u.dueDay+'号':'待定'}</td>
-                <td style="text-align:center;">${u.name}</td>
+                <td style="text-align:center;">${u.dueDay?u.dueDay+'号':'待定'}<div style="font-size:11px;color:#999999;">${u.daysLeft===0?'今天':u.daysLeft+'天后'}</div></td>
+                <td style="text-align:center;${u.checked?'text-decoration:line-through;':''}">${u.name}</td>
                 <td style="text-align:center;font-weight:700;">¥${fmt(u.amount)}</td>
+                <td style="text-align:center;">${u.checkable ? `<input type="checkbox" ${u.checked?'checked':''} onchange="App.toggleBillChecked('${u.cardId}')" style="width:18px;height:18px;cursor:pointer;"/>` : `<span style="color:#999999;font-size:11px;">自动</span>`}</td>
               </tr>`).join("")}
             </tbody>
           </table>
