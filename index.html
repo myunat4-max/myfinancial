@@ -107,11 +107,22 @@
 
 <script>
 /* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
-const sb = (SUPABASE_URL.startsWith("http")) ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+function resolveSupabaseUrl(raw){
+  const v = (raw || "").trim();
+  if (!v || v === "YOUR_SUPABASE_URL") return "";
+  if (v.startsWith("http")) return v;
+  // 容错:用户可能只填了项目 ID(如 "dzxzgrfxtnzhqfgnyemh"),自动补全成完整域名
+  if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
+  return v;
+}
+const APP_VERSION = "2026-08-20-v6";
+console.log("净值追踪 版本:", APP_VERSION);
+const RESOLVED_SUPABASE_URL = resolveSupabaseUrl(SUPABASE_URL);
+const sb = (RESOLVED_SUPABASE_URL.startsWith("http")) ? supabase.createClient(RESOLVED_SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 const fmt = n => Math.round(n || 0).toLocaleString("zh-CN");
 const todayStr = () => new Date().toISOString().slice(0,10);
@@ -287,12 +298,12 @@ const App = {
       } catch(e){
         console.error("Supabase 读取失败,本次修改不会保存", e);
         this.dbConnected = false;
-        this.dbError = ((e && e.message) || String(e)) + " | 当前页面读到的 SUPABASE_URL = " + SUPABASE_URL;
+        this.dbError = ((e && e.message) || String(e)) + " | 实际连接的地址 = " + RESOLVED_SUPABASE_URL;
         this.data = seedData();
       }
     } else {
       this.dbConnected = false;
-      this.dbError = "当前页面读到的 SUPABASE_URL = \"" + SUPABASE_URL + "\"(如果这里显示的还是 YOUR_SUPABASE_URL,说明你改的文件没有真正部署到这个网址上)";
+      this.dbError = "当前页面读到的 SUPABASE_URL 原始值 = \"" + SUPABASE_URL + "\",无法解析成有效网址。请确认已填成完整的 https://xxxx.supabase.co 或至少是项目ID本身。";
       this.data = seedData();
     }
     if (!this.data.income) this.data.income = [];
@@ -723,6 +734,7 @@ const App = {
               ${this.data.familyMembers.map(n=>`<button class="btn-primary" style="font-size:15px;padding:14px 26px;border-radius:14px;" onclick="App.setCurrentUser('${n}')">${this.ownerEmoji(n)} 我是${n}</button>`).join("")}
             </div>
             <div class="muted">选完之后随时可以点右上角名字切换或改名</div>
+            <div style="color:var(--ink-faint);font-size:11px;">版本 ${APP_VERSION}</div>
           </div>
         </div>`;
       return;
@@ -756,6 +768,7 @@ const App = {
           ${TABS.map(t=>`<div class="tab ${this.tab===t.id?'active':''}" onclick="App.setTab('${t.id}')">${t.label}</div>`).join("")}
         </div>
         ${body}
+        <div style="text-align:center;color:var(--ink-faint);font-size:11px;margin-top:20px;">版本 ${APP_VERSION}</div>
       </div>`;
 
     if (this.tab==="history") this.drawChart();
