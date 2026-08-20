@@ -75,6 +75,10 @@
   .chip b{color:var(--ink);font-weight:600;}
   .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
   .bill-card{background:var(--card-soft);border-radius:14px;padding:6px 4px;margin-bottom:10px;}
+  .stat-strip{display:flex;gap:22px;flex-wrap:wrap;margin-top:12px;}
+  .ss-label{font-size:11px;color:var(--ink-faint);}
+  .ss-value{font-size:14px;font-weight:700;color:var(--apricot-ink);margin-top:3px;}
+  .btn-small{background:var(--spring);color:#fff;border:none;border-radius:14px;padding:5px 12px;font-size:12px;cursor:pointer;flex-shrink:0;}
   .bill-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;}
   .bill-left{min-width:0;}
   .bill-title{font-weight:700;font-size:14px;color:var(--ink);}
@@ -120,8 +124,8 @@
 
 <script>
 /* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
 function resolveSupabaseUrl(raw){
@@ -132,7 +136,7 @@ function resolveSupabaseUrl(raw){
   if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
   return v;
 }
-const APP_VERSION = "2026-08-20-v12";
+const APP_VERSION = "2026-08-20-v13";
 console.log("净值追踪 版本:", APP_VERSION);
 const RESOLVED_SUPABASE_URL = resolveSupabaseUrl(SUPABASE_URL);
 const sb = (RESOLVED_SUPABASE_URL.startsWith("http")) ? supabase.createClient(RESOLVED_SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -180,6 +184,11 @@ function daysUntilDueDay(dueDay){
   next.setHours(0,0,0,0);
   if (next < now) next = new Date(now.getFullYear(), now.getMonth()+1, dueDay);
   return Math.round((next-now)/86400000);
+}
+function approxPayoffDate(item){
+  if (!item.baseDate || !item.remainingTermsAtBase) return "-";
+  const d = addMonths(new Date(item.baseDate), Number(item.remainingTermsAtBase)||0);
+  return `约${d.getFullYear()}.${d.getMonth()+1}`;
 }
 function impliedMonthlyRate(P0, A, n){
   if (!(n>0) || !(P0>0) || !(A>0)) return null;
@@ -946,16 +955,14 @@ const App = {
     } else if (subTab === "accounts"){
       subBody = `
         <div class="card" style="padding:18px 20px;">
-          <div class="row-between" style="align-items:flex-start;">
-            <div>
-              <div style="font-size:12px;color:var(--ink-soft);">家庭净值</div>
-              <div style="font-family:'Noto Serif SC',serif;font-size:32px;font-weight:900;color:${t.netWorth>=0?'var(--positive)':'var(--negative)'};margin-top:2px;">
-                ${t.netWorth>=0?"":"-"}¥${fmt(Math.abs(t.netWorth))}
-              </div>
-              <div class="muted" style="margin-top:2px;">${t.netWorth>=0?"🌳 已经转正啦":"🌱 一天天记录,总会长成一棵树"}</div>
+          <div style="font-size:12px;color:var(--ink-soft);">家庭净值</div>
+          <div class="row-between" style="align-items:center;margin-top:2px;">
+            <div style="font-family:'Noto Serif SC',serif;font-size:32px;font-weight:900;color:${t.netWorth>=0?'var(--positive)':'var(--negative)'};">
+              ${t.netWorth>=0?"":"-"}¥${fmt(Math.abs(t.netWorth))}
             </div>
-            <button class="btn-primary" onclick="App.saveSnapshot()">📌 保存今日快照</button>
+            <button class="btn-small" onclick="App.saveSnapshot()">📌 今日快照</button>
           </div>
+          <div class="muted" style="margin-top:2px;">${t.netWorth>=0?"🌳 已经转正啦":"🌱 一天天记录,总会长成一棵树"}</div>
         </div>
 
         <div class="plain-row">
@@ -978,13 +985,14 @@ const App = {
           ${this.data.familyMembers.map((owner,idx)=>{
             const ot = this.totals(owner);
             const bg = idx===0 ? "var(--apricot)" : "var(--spring)";
-            return `<div style="background:${bg};color:#fff;">
+            const line = (label,val)=>`<div class="row-between p-line"><span>${label}</span><b>${val}</b></div>`;
+            return `<div style="background:${bg};color:#666666;">
               <div class="p-head">${this.ownerEmoji(owner)} ${owner}</div>
-              <div class="p-line">净值 <b>${ot.netWorth>=0?'':'-'}¥${fmt(Math.abs(ot.netWorth))}</b></div>
-              <div class="p-line">资产 <b>¥${fmt(ot.totalAssets)}</b></div>
-              <div class="p-line">负债 <b>¥${fmt(ot.totalLiabilities)}</b></div>
-              <div class="p-line">月收入 <b>¥${fmt(ot.incomeMonthly)}</b></div>
-              <div class="p-line">信用卡额度 <b>¥${fmt(ot.cardLimitTotal)}</b></div>
+              ${line("净值", (ot.netWorth>=0?'':'-')+'¥'+fmt(Math.abs(ot.netWorth)))}
+              ${line("资产", '¥'+fmt(ot.totalAssets))}
+              ${line("负债", '¥'+fmt(ot.totalLiabilities))}
+              ${line("月收入", '¥'+fmt(ot.incomeMonthly))}
+              ${line("信用卡额度", '¥'+fmt(ot.cardLimitTotal))}
             </div>`;
           }).join("")}
         </div>`;
@@ -1053,24 +1061,24 @@ const App = {
         const remaining = computeRemaining(l, today);
         const elId = `loan__${l.id}__null`;
         const editable = this.canEdit(l);
-        return `<div class="bill-card">
-          <div class="bill-row">
-            <div class="bill-left">
-              <div class="bill-title">${this.ownerEmoji(l.owner||"共同")} ${l.name} ${l.status==="paid"?'<span style="color:#3f6b3b;font-size:12px;">✅已结清</span>':''}</div>
-              <div class="bill-sub">利率${l.rate}% · 月供¥${fmt(l.monthlyPayment)} · 还款日${l.dueDay}号${l.note?(' · '+l.note):''}</div>
-            </div>
-            <div class="bill-right">
-              <div class="bill-amount">¥${fmt(remaining)}</div>
-              <div class="bill-sub">剩余本金</div>
+        return `<div class="bill-card" style="padding:14px 16px;">
+          <div class="row-between" style="align-items:center;">
+            <div style="font-weight:700;font-size:15px;">${this.ownerEmoji(l.owner||"共同")} ${l.name} ${l.status==="paid"?'<span style="color:#3f6b3b;font-size:12px;">✅已结清</span>':''}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              ${editable ? `
+                <button class="icon-btn" onclick="App.toggleCalibrate('${elId}', ${remaining})">校准</button>
+                <button class="icon-btn" onclick='App.openEditForm("loan", LOAN_SCHEMA, ${JSON.stringify(l)})'>编辑</button>
+                <button class="icon-btn" onclick="App.toggleLoanPaid('${l.id}')">${l.status==="paid"?"恢复":"结清"}</button>
+                <button class="icon-btn" onclick="App.deleteItem('loan','${l.id}')">🗑️</button>
+              ` : `<span class="muted">仅${l.owner}可编辑</span>`}
             </div>
           </div>
-          <div class="bill-actions">
-            ${editable ? `
-              <span id="${elId}"><button class="icon-btn" onclick="App.toggleCalibrate('${elId}', ${remaining})">✏️ 校准</button></span>
-              <button class="icon-btn" onclick='App.openEditForm("loan", LOAN_SCHEMA, ${JSON.stringify(l)})'>编辑</button>
-              <button class="icon-btn" onclick="App.toggleLoanPaid('${l.id}')">${l.status==="paid"?"恢复":"结清"}</button>
-              <button class="icon-btn" onclick="App.deleteItem('loan','${l.id}')">🗑️</button>
-            ` : `<span class="muted">仅${l.owner}可编辑</span>`}
+          <div class="stat-strip">
+            <div><div class="ss-label">月供</div><div class="ss-value">¥${fmt(l.monthlyPayment)}</div></div>
+            <div><div class="ss-label">还款日</div><div class="ss-value">${l.dueDay}号</div></div>
+            <div><div class="ss-label">利率</div><div class="ss-value">${l.rate}%</div></div>
+            <div><div class="ss-label">到期时间</div><div class="ss-value">${approxPayoffDate(l)}</div></div>
+            <div><div class="ss-label">剩余本金</div><div class="ss-value" id="${elId}">¥${fmt(remaining)}</div></div>
           </div>
         </div>`;
       }).join("")}`;
@@ -1125,20 +1133,21 @@ const App = {
         const addInstallForm = (this.openForm && this.openForm.kind==="installment" && this.openForm.mode==="add" && this.openForm.cardId===c.id) ? this.renderFormInner() : `<button class="btn-ghost" style="margin-top:10px;" onclick="App.openAddForm('installment', INSTALLMENT_SCHEMA, {method:'equal_installment', baseDate: todayStr()}, '${c.id}')">➕ 添加分期明细</button>`;
 
         return `<div class="card">
-          <div class="row-between">
-            <div style="font-weight:600;font-size:15px;">${this.ownerEmoji(c.owner||"共同")} ${c.name}</div>
-            <div style="text-align:right;">
-              <div style="font-size:10px;color:var(--ink-faint);">合计欠款</div>
-              <div style="font-size:17px;font-weight:700;">¥${fmt(cardTotal)}</div>
+          <div class="row-between" style="align-items:center;">
+            <div style="font-weight:700;font-size:15px;">${this.ownerEmoji(c.owner||"共同")} ${c.name}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              ${this.canEdit(c) ? `
+                <button class="icon-btn" onclick='App.openEditForm("card", CARD_SCHEMA, ${JSON.stringify(c)})'>编辑</button>
+                <button class="icon-btn" onclick="App.deleteItem('card','${c.id}')">🗑️</button>
+              ` : ""}
             </div>
           </div>
-          <div class="bill-sub" style="margin-top:4px;">额度¥${fmt(c.totalLimit)} · 还款日${c.dueDay}号${c.installments.length?(' · 分期'+c.installments.length+'笔'):''}${c.note?(' · '+c.note):''}</div>
-          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-            ${this.canEdit(c) ? `
-              <button class="icon-btn" onclick='App.openEditForm("card", CARD_SCHEMA, ${JSON.stringify(c)})'>编辑</button>
-              <button class="icon-btn" onclick="App.deleteItem('card','${c.id}')">🗑️</button>
-            ` : ""}
-            <button class="icon-btn" onclick="App.toggleCardExpand('${c.id}')">${expanded?"收起 ▲":"展开 ▼"}</button>
+          <div class="stat-strip" style="align-items:flex-end;">
+            <div><div class="ss-label">额度</div><div class="ss-value">¥${fmt(c.totalLimit)}</div></div>
+            <div><div class="ss-label">还款日</div><div class="ss-value">${c.dueDay}号</div></div>
+            <div><div class="ss-label">分期笔数</div><div class="ss-value">${c.installments.length}笔</div></div>
+            <div><div class="ss-label">合计欠款</div><div class="ss-value" style="color:var(--ink);font-size:16px;">¥${fmt(cardTotal)}</div></div>
+            <button class="icon-btn" onclick="App.toggleCardExpand('${c.id}')" style="align-self:center;">${expanded?"收起 ▲":"展开 ▼"}</button>
           </div>
           ${expanded ? `
           <div style="margin-top:12px;padding-top:12px;">
