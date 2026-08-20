@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>净值追踪 · 鹿桃记账</title>
+<title>净值记账</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="净值追踪" />
-<meta name="theme-color" content="#7A5230" />
+<meta name="apple-mobile-web-app-title" content="净值记账" />
+<meta name="theme-color" content="#9EB995" />
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
@@ -112,7 +112,7 @@
   /* 两人卡片:各自独立的框,中间用间距分开,不用竖线 */
   .person-cols-plain{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
   .person-cols-plain > div{border-radius:14px;padding:12px 14px;}
-  .person-col .p-head{font-weight:700;font-size:13px;margin-bottom:20px;}
+  .person-col .p-head{font-weight:700;font-size:13px;margin-bottom:28px;}
   .person-col .p-line{font-size:11px;opacity:0.85;line-height:1.7;}
   .person-col .p-line b{opacity:1;}
 </style>
@@ -124,8 +124,8 @@
 
 <script>
 /* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
 function resolveSupabaseUrl(raw){
@@ -136,7 +136,7 @@ function resolveSupabaseUrl(raw){
   if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
   return v;
 }
-const APP_VERSION = "2026-08-20-v15";
+const APP_VERSION = "2026-08-20-v17";
 console.log("净值追踪 版本:", APP_VERSION);
 const RESOLVED_SUPABASE_URL = resolveSupabaseUrl(SUPABASE_URL);
 const sb = (RESOLVED_SUPABASE_URL.startsWith("http")) ? supabase.createClient(RESOLVED_SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -163,7 +163,8 @@ function computeRemaining(item, today){
   k = Math.min(k, n);
   if (n <= 0) return Math.max(0, P0);
   let balance;
-  if (item.method === "interest_free" || r === 0) balance = P0 - (P0/n)*k;
+  if (item.method === "interest_first") balance = k >= n ? 0 : P0;
+  else if (item.method === "interest_free" || r === 0) balance = P0 - (P0/n)*k;
   else if (item.method === "equal_principal") balance = P0 - (P0/n)*k;
   else balance = P0*Math.pow(1+r,k) - (A*(Math.pow(1+r,k)-1))/r;
   return Math.max(0, Math.round(balance));
@@ -208,9 +209,12 @@ const METHOD_OPTIONS = [
   {value:"equal_installment", label:"等额本息"},
   {value:"equal_principal", label:"等额本金"},
   {value:"interest_free", label:"无息分期"},
+  {value:"interest_first", label:"先息后本"},
 ];
 const LOAN_SCHEMA = [
   {key:"name", label:"名称", type:"text", placeholder:"如:农信社"},
+  {key:"originalPrincipal", label:"原始本金/贷款总额(元,选填)", type:"number"},
+  {key:"totalTerms", label:"总期数(选填)", type:"number"},
   {key:"basePrincipal", label:"基准剩余本金(元)", type:"number"},
   {key:"baseDate", label:"基准确认日期", type:"date"},
   {key:"rate", label:"年利率(%)", type:"number", step:"0.01", solvable:true},
@@ -218,10 +222,13 @@ const LOAN_SCHEMA = [
   {key:"monthlyPayment", label:"月供(元)", type:"number"},
   {key:"dueDay", label:"还款日(几号)", type:"number"},
   {key:"remainingTermsAtBase", label:"基准日剩余期数", type:"number"},
+  {key:"dueDate", label:"到期时间", type:"text", placeholder:"如 2027-07-15 或 2027-07,留空显示-"},
   {key:"note", label:"备注", type:"text"},
 ];
 const INSTALLMENT_SCHEMA = [
   {key:"label", label:"分期说明", type:"text", placeholder:"如:第9笔"},
+  {key:"originalPrincipal", label:"分期总额(元,选填)", type:"number"},
+  {key:"totalTerms", label:"总期数(选填)", type:"number"},
   {key:"basePrincipal", label:"基准剩余本金(元)", type:"number"},
   {key:"baseDate", label:"基准确认日期", type:"date"},
   {key:"rate", label:"年利率(%)", type:"number", step:"0.01", solvable:true},
@@ -231,8 +238,10 @@ const INSTALLMENT_SCHEMA = [
 ];
 const CARD_SCHEMA = [
   {key:"name", label:"银行/平台", type:"text"},
+  {key:"last4", label:"卡号后四位(选填)", type:"text", placeholder:"如 8888"},
   {key:"totalLimit", label:"总额度(元)", type:"number"},
   {key:"currentBillManual", label:"当期账单/未分期欠款(元)", type:"number"},
+  {key:"billDate", label:"账单日(几号,选填)", type:"number"},
   {key:"dueDay", label:"还款日(几号)", type:"number"},
   {key:"note", label:"备注", type:"text"},
 ];
@@ -657,7 +666,7 @@ const App = {
   async submitForm(){
     const of = this.openForm;
     const vals = this.captureFormValues();
-    ["basePrincipal","rate","monthlyPayment","dueDay","remainingTermsAtBase","totalLimit","currentBillManual","currentValue","coverageAmount","annualPremium","cashValue","amount"].forEach(k=>{
+    ["basePrincipal","rate","monthlyPayment","dueDay","remainingTermsAtBase","totalLimit","currentBillManual","currentValue","coverageAmount","annualPremium","cashValue","amount","originalPrincipal","totalTerms","billDate"].forEach(k=>{
       if (vals[k]!==undefined && vals[k]!=="") vals[k]=Number(vals[k]);
     });
     if (of.kind==="loan"){
@@ -1088,8 +1097,10 @@ const App = {
             <div><div class="ss-label">月供</div><div class="ss-value">¥${fmt(l.monthlyPayment)}</div></div>
             <div><div class="ss-label">还款日</div><div class="ss-value">${l.dueDay}号</div></div>
             <div><div class="ss-label">利率</div><div class="ss-value">${l.rate}%</div></div>
-            <div><div class="ss-label">到期时间</div><div class="ss-value">${approxPayoffDate(l)}</div></div>
+            <div><div class="ss-label">到期时间</div><div class="ss-value">${l.dueDate || "-"}</div></div>
+            <div><div class="ss-label">剩余期数</div><div class="ss-value">${Math.max(0,(Number(l.remainingTermsAtBase)||0)-Math.min(countPeriodsPassed(l.baseDate,l.dueDay,today),Number(l.remainingTermsAtBase)||0))}期</div></div>
             <div><div class="ss-label">剩余本金</div><div class="ss-value" id="${elId}">¥${fmt(remaining)}</div></div>
+            ${l.originalPrincipal && l.totalTerms ? `<div><div class="ss-label">还款进度</div><div class="ss-value">第${Math.min(Number(l.totalTerms), Number(l.totalTerms)-(Math.max(0,(Number(l.remainingTermsAtBase)||0)-Math.min(countPeriodsPassed(l.baseDate,l.dueDay,today),Number(l.remainingTermsAtBase)||0))))}/${l.totalTerms}期 · ${Math.round((1-remaining/Number(l.originalPrincipal))*100)}%</div></div>` : ""}
           </div>
         </div>`;
       }).join("")}`;
@@ -1126,7 +1137,7 @@ const App = {
               return `<div class="bill-row">
                 <div class="bill-left">
                   <div class="bill-title">${i.label}</div>
-                  <div class="bill-sub">利率 ${i.rate}%</div>
+                  <div class="bill-sub">利率 ${i.rate}%${i.originalPrincipal && i.totalTerms ? ` · 进度${Math.round((1-bal/Number(i.originalPrincipal))*100)}%` : ""}</div>
                 </div>
                 <div class="bill-right">
                   <div class="bill-amount">¥${fmt(i.monthlyPayment)}<span style="font-size:11px;font-weight:400;">/月</span></div>
@@ -1145,7 +1156,7 @@ const App = {
 
         return `<div class="card">
           <div class="row-between" style="align-items:center;">
-            <div style="font-weight:700;font-size:15px;">${this.ownerEmoji(c.owner||"共同")} ${c.name}</div>
+            <div style="font-weight:700;font-size:15px;">${this.ownerEmoji(c.owner||"共同")} ${c.name}${c.last4?` <span style="font-size:12px;font-weight:400;color:var(--ink-faint);">尾号${c.last4}</span>`:""}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
               ${this.canEdit(c) ? `
                 <button class="icon-btn" onclick='App.openEditForm("card", CARD_SCHEMA, ${JSON.stringify(c)})'>编辑</button>
@@ -1162,6 +1173,7 @@ const App = {
           </div>
           ${expanded ? `
           <div style="margin-top:12px;padding-top:12px;">
+            ${c.billDate ? `<div class="bill-sub" style="margin-bottom:8px;">账单日:每月${c.billDate}号出账单</div>` : ""}
             <div class="row-between">
               <span style="font-size:13px;">当期账单/未分期欠款:</span>
               <span style="display:flex;align-items:center;gap:8px;"><b>¥${fmt(c.currentBillManual)}</b>
