@@ -16,25 +16,24 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap');
   :root{
-    --bg:#FBFAF5; --card:#FFFFFF; --card-soft:#F6F5EF; --ink:#3A3630; --ink-soft:#84806f;
-    --ink-faint:#ABA697; --wood:#8C7A4A; --wood-dark:#6b5c37;
-    --pastel-yellow:#FFE797; --pastel-green:#CFF980; --pastel-mint:#C4FECC; --pastel-blue:#C4F7FE;
-    --pastel-yellow-ink:#8a6d1f; --pastel-green-ink:#4d6b1a; --pastel-mint-ink:#25784a; --pastel-blue-ink:#1f7f93;
-    --sage:#5f9c56; --rust:#c98a4a; --gold:#c9a13a;
-    --border:#ECE8DC;
+    --bg:#FDFCFA; --card:#FFFFFF; --card-soft:#F1EEE9; --ink:#333333; --ink-soft:#666666;
+    --ink-faint:#999999; --wood:#9EB995; --wood-dark:#7fa374;
+    --apricot:#E8C49A; --spring:#9EB995; --dew:#C8D3C0; --dewwhite:#F1EEE9;
+    --positive:#E8C49A; --negative:#C8D3C0;
+    --sel-bg:#9EB995; --sel-text:#333333; --unsel-text:#999999;
+    --border:#F1EEE9;
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--ink);}
   .wrap{max-width:920px;margin:0 auto;padding:16px 16px 100px;}
   .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:4px;scrollbar-width:none;-ms-overflow-style:none;}
   .tabs::-webkit-scrollbar{display:none;}
-  .subtabs{display:flex;gap:18px;overflow-x:auto;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border);scrollbar-width:none;-ms-overflow-style:none;}
+  .subtabs{display:flex;gap:8px;overflow-x:auto;margin:0 0 14px;flex-wrap:wrap;scrollbar-width:none;-ms-overflow-style:none;}
   .subtabs::-webkit-scrollbar{display:none;}
-  .subtab{font-size:13px;color:var(--ink-faint);cursor:pointer;white-space:nowrap;position:relative;padding-bottom:8px;}
-  .subtab.active{color:var(--wood-dark);font-weight:700;}
-  .subtab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--pastel-green);border-radius:2px;}
-  .tab{padding:8px 14px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--ink-soft);white-space:nowrap;}
-  .tab.active{border-color:var(--wood);background:var(--wood);color:#fff;font-weight:600;}
+  .subtab{padding:7px 13px;border-radius:16px;font-size:13px;color:var(--unsel-text);cursor:pointer;white-space:nowrap;}
+  .subtab.active{background:var(--sel-bg);color:var(--sel-text);font-weight:700;}
+  .tab{padding:7px 13px;border-radius:16px;font-size:13px;cursor:pointer;border:none;background:transparent;color:var(--unsel-text);white-space:nowrap;}
+  .tab.active{background:var(--sel-bg);color:var(--sel-text);font-weight:700;}
   .card{background:var(--card);border:none;border-radius:14px;padding:14px 16px;margin-bottom:10px;}
   .card.flat{padding:0;}
   .row-between{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
@@ -77,7 +76,7 @@
   .select-panel{position:absolute;top:100%;left:0;right:0;z-index:40;background:#fff;border:none;border-radius:10px;margin-top:4px;box-shadow:0 6px 20px rgba(60,40,20,0.12);max-height:220px;overflow-y:auto;}
   .select-option{padding:9px 12px;font-size:14px;cursor:pointer;color:var(--ink);}
   .select-option:hover{background:var(--card-soft);}
-  .select-option.selected{background:var(--pastel-mint);font-weight:600;}
+  .select-option.selected{background:var(--dewwhite);font-weight:600;}
   /* 身份栏 */
   .identity-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
   .identity-pill{position:relative;display:inline-flex;align-items:center;gap:6px;background:var(--card-soft);border:none;border-radius:20px;padding:6px 12px 6px 10px;cursor:pointer;font-size:14px;font-weight:600;}
@@ -87,7 +86,7 @@
   .identity-networth{font-size:13px;color:var(--ink-soft);}
   .picker-screen{min-height:65vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:20px;}
   .save-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--wood-dark);color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;max-width:88vw;text-align:center;}
-  .db-warning{background:var(--pastel-yellow);color:var(--pastel-yellow-ink);border-radius:12px;padding:10px 14px;font-size:12px;margin-bottom:10px;line-height:1.6;}
+  .db-warning{background:var(--apricot);color:#6b4b1f;border-radius:12px;padding:10px 14px;font-size:12px;margin-bottom:10px;line-height:1.6;}
   /* 总览三列统计:一个大框,内部细竖线分隔 */
   .plain-grid{display:grid;grid-template-columns:repeat(3,1fr);border-radius:14px;overflow:hidden;margin:10px 0;}
   .plain-cell{padding:12px 6px;text-align:center;border-right:1px solid rgba(255,255,255,0.55);border-bottom:1px solid rgba(255,255,255,0.55);}
@@ -109,8 +108,8 @@
 
 <script>
 /* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
 function resolveSupabaseUrl(raw){
@@ -121,7 +120,7 @@ function resolveSupabaseUrl(raw){
   if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
   return v;
 }
-const APP_VERSION = "2026-08-20-v7";
+const APP_VERSION = "2026-08-20-v8";
 console.log("净值追踪 版本:", APP_VERSION);
 const RESOLVED_SUPABASE_URL = resolveSupabaseUrl(SUPABASE_URL);
 const sb = (RESOLVED_SUPABASE_URL.startsWith("http")) ? supabase.createClient(RESOLVED_SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -721,7 +720,7 @@ const App = {
               <div onclick="App.editFamilyMembers()">✏️ 修改两人昵称</div>
             </div>` : ""}
         </div>
-        <div class="identity-networth">我的净值 <b style="color:${personalNetWorth>=0?'var(--sage)':'var(--rust)'};">${personalNetWorth>=0?'':'-'}¥${fmt(Math.abs(personalNetWorth))}</b></div>
+        <div class="identity-networth">我的净值 <b style="color:${personalNetWorth>=0?'var(--positive)':'var(--negative)'};">${personalNetWorth>=0?'':'-'}¥${fmt(Math.abs(personalNetWorth))}</b></div>
       </div>`;
   },
 
@@ -861,46 +860,58 @@ const App = {
       subBody = `
         <div style="font-size:14px;font-weight:700;margin-bottom:8px;">📅 本月待还</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-          <span class="tab ${filter==='mine'?'active':''}" style="padding:5px 12px;font-size:12px;" onclick="App.setUpcomingFilter('mine')">${this.ownerEmoji(this.currentUser)} 我的+共同</span>
-          ${otherPerson ? `<span class="tab ${filter==='other'?'active':''}" style="padding:5px 12px;font-size:12px;" onclick="App.setUpcomingFilter('other')">${this.ownerEmoji(otherPerson)} ${otherPerson}的</span>` : ""}
-          <span class="tab ${filter==='all'?'active':''}" style="padding:5px 12px;font-size:12px;" onclick="App.setUpcomingFilter('all')">全部</span>
+          <span class="tab ${filter==='mine'?'active':''}" onclick="App.setUpcomingFilter('mine')">${this.ownerEmoji(this.currentUser)} 我的+共同</span>
+          ${otherPerson ? `<span class="tab ${filter==='other'?'active':''}" onclick="App.setUpcomingFilter('other')">${this.ownerEmoji(otherPerson)} ${otherPerson}的</span>` : ""}
+          <span class="tab ${filter==='all'?'active':''}" onclick="App.setUpcomingFilter('all')">全部</span>
         </div>
-        ${filtered.length===0 ? '<div class="muted">暂无记录</div>' : filtered.map(u=>`
-          <div class="card row-between" style="padding:10px 14px;">
-            <span>${this.ownerEmoji(u.owner)} ${u.name} · ${u.dueDay?u.dueDay+'号':'日期待定'}</span>
-            <span style="font-weight:600;">¥${fmt(u.amount)}</span>
-          </div>`).join("")}`;
+        ${filtered.length===0 ? '<div class="muted">暂无记录</div>' : `
+        <div class="card table-wrap" style="padding:6px 10px;">
+          <table>
+            <thead><tr><th style="text-align:center;">who</th><th style="text-align:center;">日期</th><th style="text-align:center;">待还银行/贷款</th><th style="text-align:center;">钱钱</th></tr></thead>
+            <tbody>
+              ${filtered.map(u=>`<tr>
+                <td style="text-align:center;">${this.ownerEmoji(u.owner)}</td>
+                <td style="text-align:center;">${u.dueDay?u.dueDay+'号':'待定'}</td>
+                <td style="text-align:center;">${u.name}</td>
+                <td style="text-align:center;font-weight:700;">¥${fmt(u.amount)}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`}`;
     } else if (subTab === "accounts"){
       subBody = `
         <div class="card" style="padding:18px 20px;">
-          <div style="font-size:12px;color:var(--ink-soft);">家庭净值</div>
-          <div style="font-family:'Noto Serif SC',serif;font-size:32px;font-weight:900;color:${t.netWorth>=0?'var(--sage)':'#c9784a'};margin-top:2px;">
-            ${t.netWorth>=0?"":"-"}¥${fmt(Math.abs(t.netWorth))}
+          <div class="row-between" style="align-items:flex-start;">
+            <div>
+              <div style="font-size:12px;color:var(--ink-soft);">家庭净值</div>
+              <div style="font-family:'Noto Serif SC',serif;font-size:32px;font-weight:900;color:${t.netWorth>=0?'var(--positive)':'var(--negative)'};margin-top:2px;">
+                ${t.netWorth>=0?"":"-"}¥${fmt(Math.abs(t.netWorth))}
+              </div>
+              <div class="muted" style="margin-top:2px;">${t.netWorth>=0?"🌳 已经转正啦":"🌱 一天天记录,总会长成一棵树"}</div>
+            </div>
+            <button class="btn-primary" onclick="App.saveSnapshot()">📌 保存今日快照</button>
           </div>
-          <div class="muted" style="margin-top:2px;">${t.netWorth>=0?"🌳 已经转正啦":"🌱 一天天记录,总会长成一棵树"}</div>
-          <button class="btn-primary" style="margin-top:10px;" onclick="App.saveSnapshot()">📌 保存今日快照</button>
         </div>
 
         <div class="plain-grid">
-          <div class="plain-cell" style="background:var(--pastel-mint);color:var(--pastel-mint-ink);"><div class="plain-label">总资产</div><div class="plain-value">¥${fmt(t.totalAssets)}</div></div>
-          <div class="plain-cell" style="background:var(--pastel-yellow);color:var(--pastel-yellow-ink);"><div class="plain-label">总负债</div><div class="plain-value">¥${fmt(t.totalLiabilities)}</div></div>
-          <div class="plain-cell" style="background:var(--pastel-green);color:var(--pastel-green-ink);"><div class="plain-label">家庭月收入</div><div class="plain-value">¥${fmt(t.incomeMonthly)}</div></div>
-          <div class="plain-cell" style="background:var(--pastel-blue);color:var(--pastel-blue-ink);"><div class="plain-label">贷款月供</div><div class="plain-value">¥${fmt(t.loanMonthly)}</div></div>
-          <div class="plain-cell" style="background:var(--pastel-yellow);color:var(--pastel-yellow-ink);"><div class="plain-label">信用卡月供</div><div class="plain-value">¥${fmt(t.cardMonthly)}</div></div>
-          <div class="plain-cell" style="background:var(--pastel-yellow);color:var(--pastel-yellow-ink);"><div class="plain-label">总月供</div><div class="plain-value">¥${fmt(totalMonthly)}</div></div>
-          <div class="plain-cell" style="background:var(--pastel-blue);color:var(--pastel-blue-ink);"><div class="plain-label">信用卡总额度</div><div class="plain-value">¥${fmt(t.cardLimitTotal)}</div></div>
-          <div class="plain-cell" style="background:var(--pastel-yellow);color:var(--pastel-yellow-ink);"><div class="plain-label">已用额度</div><div class="plain-value">¥${fmt(cardUsed)}</div></div>
-          <div class="plain-cell" style="background:var(--pastel-mint);color:var(--pastel-mint-ink);"><div class="plain-label">可用额度</div><div class="plain-value">¥${fmt(cardAvailable)}</div></div>
+          <div class="plain-cell" style="background:var(--dewwhite);color:#3f6b3b;"><div class="plain-label">总资产</div><div class="plain-value">¥${fmt(t.totalAssets)}</div></div>
+          <div class="plain-cell" style="background:var(--apricot);color:#6b4b1f;"><div class="plain-label">总负债</div><div class="plain-value">¥${fmt(t.totalLiabilities)}</div></div>
+          <div class="plain-cell" style="background:var(--spring);color:#3f6b3b;"><div class="plain-label">家庭月收入</div><div class="plain-value">¥${fmt(t.incomeMonthly)}</div></div>
+          <div class="plain-cell" style="background:var(--dew);color:#3f6b3b;"><div class="plain-label">贷款月供</div><div class="plain-value">¥${fmt(t.loanMonthly)}</div></div>
+          <div class="plain-cell" style="background:var(--apricot);color:#6b4b1f;"><div class="plain-label">信用卡月供</div><div class="plain-value">¥${fmt(t.cardMonthly)}</div></div>
+          <div class="plain-cell" style="background:var(--apricot);color:#6b4b1f;"><div class="plain-label">总月供</div><div class="plain-value">¥${fmt(totalMonthly)}</div></div>
+          <div class="plain-cell" style="background:var(--dew);color:#3f6b3b;"><div class="plain-label">信用卡总额度</div><div class="plain-value">¥${fmt(t.cardLimitTotal)}</div></div>
+          <div class="plain-cell" style="background:var(--apricot);color:#6b4b1f;"><div class="plain-label">已用额度</div><div class="plain-value">¥${fmt(cardUsed)}</div></div>
+          <div class="plain-cell" style="background:var(--dewwhite);color:#3f6b3b;"><div class="plain-label">可用额度</div><div class="plain-value">¥${fmt(cardAvailable)}</div></div>
         </div>
 
         <div class="person-cols-plain">
           ${this.data.familyMembers.map((owner,idx)=>{
             const ot = this.totals(owner);
-            const bg = idx===0 ? "var(--pastel-green)" : "var(--pastel-blue)";
-            const inkc = idx===0 ? "var(--pastel-green-ink)" : "var(--pastel-blue-ink)";
-            return `<div style="background:${bg};color:${inkc};">
+            const bg = idx===0 ? "var(--spring)" : "var(--dew)";
+            return `<div style="background:${bg};color:#333;">
               <div class="p-head">${this.ownerEmoji(owner)} ${owner}</div>
-              <div class="p-line">净值 <b>${ot.netWorth>=0?'':'-'}¥${fmt(Math.abs(ot.netWorth))}</b></div>
+              <div class="p-line">净值 <b style="color:${ot.netWorth>=0?'var(--positive)':'var(--negative)'};">${ot.netWorth>=0?'':'-'}¥${fmt(Math.abs(ot.netWorth))}</b></div>
               <div class="p-line">资产 <b>¥${fmt(ot.totalAssets)}</b></div>
               <div class="p-line">负债 <b>¥${fmt(ot.totalLiabilities)}</b></div>
               <div class="p-line">月收入 <b>¥${fmt(ot.incomeMonthly)}</b></div>
@@ -974,7 +985,7 @@ const App = {
         return `<div class="bill-card">
           <div class="bill-row">
             <div class="bill-left">
-              <div class="bill-title">${this.ownerEmoji(l.owner||"共同")} ${l.name} ${l.status==="paid"?'<span style="color:var(--pastel-green-ink);font-size:12px;">✅已结清</span>':''}</div>
+              <div class="bill-title">${this.ownerEmoji(l.owner||"共同")} ${l.name} ${l.status==="paid"?'<span style="color:#3f6b3b;font-size:12px;">✅已结清</span>':''}</div>
               <div class="bill-sub">利率${l.rate}% · 月供¥${fmt(l.monthlyPayment)} · 还款日${l.dueDay}号${l.note?(' · '+l.note):''}</div>
             </div>
             <div class="bill-right">
@@ -1103,7 +1114,7 @@ const App = {
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <div style="font-size:18px;font-weight:700;color:var(--sage);">¥${fmt(i.amount)}</div>
+            <div style="font-size:18px;font-weight:700;">¥${fmt(i.amount)}</div>
             ${editable ? `
               <button class="icon-btn" onclick='App.openEditForm("income", INCOME_SCHEMA, ${JSON.stringify(i)})'>编辑</button>
               <button class="icon-btn" onclick="App.deleteItem('income','${i.id}')">🗑️</button>
@@ -1139,7 +1150,7 @@ const App = {
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <div style="font-size:18px;font-weight:700;color:var(--sage);">¥${fmt(a.currentValue)}</div>
+            <div style="font-size:18px;font-weight:700;">¥${fmt(a.currentValue)}</div>
             ${this.canEdit(a) ? `
               <button class="icon-btn" onclick='App.openEditForm("asset", ASSET_SCHEMA, ${JSON.stringify(a)})'>编辑</button>
               <button class="icon-btn" onclick="App.deleteItem('asset','${a.id}')">🗑️</button>
@@ -1174,7 +1185,7 @@ const App = {
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
-            ${(i.type==="savings"&&i.includeInNetWorth) ? `<div style="font-size:18px;font-weight:700;color:var(--sage);">¥${fmt(i.cashValue)}</div>` : ""}
+            ${(i.type==="savings"&&i.includeInNetWorth) ? `<div style="font-size:18px;font-weight:700;">¥${fmt(i.cashValue)}</div>` : ""}
             ${this.canEdit(i) ? `
               <button class="icon-btn" onclick='App.openEditForm("insurance", INSURANCE_SCHEMA, ${JSON.stringify(i)})'>编辑</button>
               <button class="icon-btn" onclick="App.deleteItem('insurance','${i.id}')">🗑️</button>
@@ -1192,7 +1203,7 @@ const App = {
     }
     const rows = [...this.data.history].reverse().map(h=>`
       <tr><td>${h.date}</td><td>¥${fmt(h.totalAssets)}</td><td>¥${fmt(h.totalLiabilities)}</td>
-      <td style="color:${h.netWorth>=0?'var(--sage)':'var(--rust)'};font-weight:600;">¥${fmt(h.netWorth)}</td></tr>`).join("");
+      <td style="color:${h.netWorth>=0?'var(--positive)':'var(--negative)'};font-weight:600;">¥${fmt(h.netWorth)}</td></tr>`).join("");
     return `
       <div class="section-head"><div><div class="title">📊 净值趋势</div><div class="subtitle">家庭净值(总资产-总负债)随时间的变化,每次保存快照多一个点</div></div></div>
       <div class="card" style="height:260px;padding:16px 8px;"><canvas id="trendChart"></canvas></div>
