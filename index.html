@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>净值记账</title>
+<title>净值追踪 · 鹿桃记账</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
@@ -16,22 +16,34 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap');
   :root{
-    --bg:#FDFCFA; --card:#FFFFFF; --card-soft:#F1EEE9; --ink:#333333; --ink-soft:#666666;
+    --bg:#F5F2F0; --card:#FFFFFF; --card-soft:#F1EEE9; --ink:#333333; --ink-soft:#666666;
     --ink-faint:#999999; --wood:#9EB995; --wood-dark:#7fa374;
     --apricot:#E8C49A; --spring:#9EB995; --dew:#C8D3C0; --dewwhite:#F1EEE9;
     --positive:#E8C49A; --negative:#C8D3C0;
-    --sel-bg:#9EB995; --sel-text:#333333; --unsel-text:#999999;
+    --sel-bg:#9EB995; --sel-text:#FFFFFF; --unsel-text:#999999; --unsel-bg:#EFEFEF; --unsel-border:#999999;
     --border:#F1EEE9;
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--ink);}
   .wrap{max-width:920px;margin:0 auto;padding:16px 16px 100px;}
-  .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:4px;scrollbar-width:none;-ms-overflow-style:none;}
-  .tabs::-webkit-scrollbar{display:none;}
-  .subtabs{display:flex;gap:8px;overflow-x:auto;margin:0 0 14px;flex-wrap:wrap;scrollbar-width:none;-ms-overflow-style:none;}
+  /* 第一层:主导航,纯文字+选中下划线,不用底色 */
+  .toptabs{display:flex;gap:18px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;scrollbar-width:none;-ms-overflow-style:none;}
+  .toptabs::-webkit-scrollbar{display:none;}
+  .toptab{background:none;border:none;padding:4px 2px 0;cursor:pointer;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;}
+  .toptab-label{font-size:13px;color:var(--unsel-text);}
+  .toptab.active .toptab-label{color:var(--ink);font-weight:700;}
+  .toptab-bar{height:6px;width:100%;min-width:36px;border-radius:5px;background:transparent;}
+  .toptab.active .toptab-bar{background:var(--spring);}
+  /* 第二层:总览下的4个子tab,始终有圆角框 */
+  .subtabs{display:flex;gap:8px;overflow-x:auto;margin:0 0 14px;scrollbar-width:none;-ms-overflow-style:none;}
   .subtabs::-webkit-scrollbar{display:none;}
-  .subtab{padding:7px 13px;border-radius:16px;font-size:13px;color:var(--unsel-text);cursor:pointer;white-space:nowrap;}
-  .subtab.active{background:var(--sel-bg);color:var(--sel-text);font-weight:700;}
+  .subtab{padding:7px 13px;border-radius:16px;font-size:13px;cursor:pointer;white-space:nowrap;background:var(--unsel-bg);border:1px solid var(--unsel-border);color:var(--unsel-text);flex-shrink:0;}
+  .subtab.active{background:var(--sel-bg);border-color:var(--sel-bg);color:var(--sel-text);font-weight:700;}
+  /* 第三层:归属/排序筛选,纯文字+选中波浪线,不用框 */
+  .wavetabs{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;}
+  .wavetab{background:none;border:none;padding:0;cursor:pointer;font-size:13px;color:var(--unsel-text);display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .wavetab.active{color:var(--ink);font-weight:700;}
+  .wavetab .wave-slot{height:9px;display:flex;align-items:center;}
   .tab{padding:7px 13px;border-radius:16px;font-size:13px;cursor:pointer;border:none;background:transparent;color:var(--unsel-text);white-space:nowrap;}
   .tab.active{background:var(--sel-bg);color:var(--sel-text);font-weight:700;}
   .card{background:var(--card);border:none;border-radius:14px;padding:14px 16px;margin-bottom:10px;}
@@ -108,8 +120,8 @@
 
 <script>
 /* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
 function resolveSupabaseUrl(raw){
@@ -120,7 +132,7 @@ function resolveSupabaseUrl(raw){
   if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
   return v;
 }
-const APP_VERSION = "2026-08-20-v8";
+const APP_VERSION = "2026-08-20-v9";
 console.log("净值追踪 版本:", APP_VERSION);
 const RESOLVED_SUPABASE_URL = resolveSupabaseUrl(SUPABASE_URL);
 const sb = (RESOLVED_SUPABASE_URL.startsWith("http")) ? supabase.createClient(RESOLVED_SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -696,10 +708,19 @@ const App = {
 
   toggleCardExpand(id){ this.expandedCard = this.expandedCard===id ? null : id; this.render(); },
 
+  waveSvg(){
+    return `<svg width="20" height="9" viewBox="0 0 20 9"><path d="M1 2 Q5.5 8 10 2 T19 2" stroke="#9EB995" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>`;
+  },
   renderOwnerChips(){
     const opts = ["全部", ...this.data.familyMembers, "共同"];
-    return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-      ${opts.map(o=>`<span class="tab ${this.ownerFilter===o?'active':''}" style="padding:5px 12px;font-size:12px;" onclick="App.setOwnerFilter('${o}')">${o==="全部"?"":this.ownerEmoji(o)+" "}${o}</span>`).join("")}
+    return `<div class="wavetabs">
+      ${opts.map(o=>{
+        const active = this.ownerFilter===o;
+        return `<span class="wavetab ${active?'active':''}" onclick="App.setOwnerFilter('${o}')">
+          <span>${o==="全部"?"":this.ownerEmoji(o)+" "}${o}</span>
+          <span class="wave-slot">${active?this.waveSvg():""}</span>
+        </span>`;
+      }).join("")}
     </div>`;
   },
   matchOwner(item){ return this.ownerFilter==="全部" || (item.owner||"共同")===this.ownerFilter; },
@@ -765,8 +786,11 @@ const App = {
       <div class="wrap">
         ${this.dbConnected===false ? `<div class="db-warning">⚠️ 当前没有连接上数据库,所有修改只存在这次打开的页面里——刷新、关闭页面或过一阵子回来都会丢失。<br>请检查 index.html 顶部的 SUPABASE_URL / SUPABASE_ANON_KEY 是否已经填成你自己 Supabase 项目的真实值。${this.dbError?`<br>详细信息:${this.dbError}`:""}</div>` : ""}
         ${this.renderIdentityBar(personal.netWorth)}
-        <div class="tabs">
-          ${TABS.map(t=>`<div class="tab ${this.tab===t.id?'active':''}" onclick="App.setTab('${t.id}')">${t.label}</div>`).join("")}
+        <div class="toptabs">
+          ${TABS.map(t=>`<div class="toptab ${this.tab===t.id?'active':''}" onclick="App.setTab('${t.id}')">
+            <span class="toptab-label">${t.label}</span>
+            <span class="toptab-bar"></span>
+          </div>`).join("")}
         </div>
         ${body}
         <div style="text-align:center;color:var(--ink-faint);font-size:11px;margin-top:20px;">版本 ${APP_VERSION}</div>
@@ -858,11 +882,19 @@ const App = {
         return u.owner===this.currentUser || u.owner==="共同"; // mine
       });
       subBody = `
-        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">📅 本月待还</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-          <span class="tab ${filter==='mine'?'active':''}" onclick="App.setUpcomingFilter('mine')">${this.ownerEmoji(this.currentUser)} 我的+共同</span>
-          ${otherPerson ? `<span class="tab ${filter==='other'?'active':''}" onclick="App.setUpcomingFilter('other')">${this.ownerEmoji(otherPerson)} ${otherPerson}的</span>` : ""}
-          <span class="tab ${filter==='all'?'active':''}" onclick="App.setUpcomingFilter('all')">全部</span>
+        <div class="wavetabs">
+          <span class="wavetab ${filter==='mine'?'active':''}" onclick="App.setUpcomingFilter('mine')">
+            <span>${this.ownerEmoji(this.currentUser)} 我的+共同</span>
+            <span class="wave-slot">${filter==='mine'?this.waveSvg():""}</span>
+          </span>
+          ${otherPerson ? `<span class="wavetab ${filter==='other'?'active':''}" onclick="App.setUpcomingFilter('other')">
+            <span>${this.ownerEmoji(otherPerson)} ${otherPerson}的</span>
+            <span class="wave-slot">${filter==='other'?this.waveSvg():""}</span>
+          </span>` : ""}
+          <span class="wavetab ${filter==='all'?'active':''}" onclick="App.setUpcomingFilter('all')">
+            <span>全部</span>
+            <span class="wave-slot">${filter==='all'?this.waveSvg():""}</span>
+          </span>
         </div>
         ${filtered.length===0 ? '<div class="muted">暂无记录</div>' : `
         <div class="card table-wrap" style="padding:6px 10px;">
@@ -928,12 +960,18 @@ const App = {
         </div>
         ${this.aiAdvice ? `<div class="card" style="white-space:pre-wrap;line-height:1.7;">${this.aiAdvice}</div>` : `<div class="muted">点「生成建议」,会把当前全部负债和收入情况发给 AI,给出还款优先级参考。</div>`}
 
-        <div class="row-between" style="margin:14px 0 8px;">
+        <div class="row-between" style="margin:14px 0 4px;align-items:flex-end;">
           <div style="font-size:14px;font-weight:700;">📋 全部负债明细</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <span class="tab ${sortBy==='term'?'active':''}" style="padding:5px 10px;font-size:12px;" onclick="App.setDebtSort('term')">期数最短</span>
-            <span class="tab ${sortBy==='rate'?'active':''}" style="padding:5px 10px;font-size:12px;" onclick="App.setDebtSort('rate')">利率最高</span>
-            <span class="tab ${sortBy==='payment'?'active':''}" style="padding:5px 10px;font-size:12px;" onclick="App.setDebtSort('payment')">月供最高</span>
+          <div class="wavetabs" style="margin-bottom:0;">
+            <span class="wavetab ${sortBy==='term'?'active':''}" onclick="App.setDebtSort('term')">
+              <span>期数最短</span><span class="wave-slot">${sortBy==='term'?this.waveSvg():""}</span>
+            </span>
+            <span class="wavetab ${sortBy==='rate'?'active':''}" onclick="App.setDebtSort('rate')">
+              <span>利率最高</span><span class="wave-slot">${sortBy==='rate'?this.waveSvg():""}</span>
+            </span>
+            <span class="wavetab ${sortBy==='payment'?'active':''}" onclick="App.setDebtSort('payment')">
+              <span>月供最高</span><span class="wave-slot">${sortBy==='payment'?this.waveSvg():""}</span>
+            </span>
           </div>
         </div>
         <div class="card table-wrap" style="padding:8px 12px;">
@@ -948,7 +986,6 @@ const App = {
         </div>`;
     } else if (subTab === "insurance"){
       subBody = `
-        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">🛡️ 保险缴费提醒</div>
         ${insReminders.length===0 ? '<div class="muted">暂无保单</div>' : insReminders.map(i=>`
           <div class="card row-between" style="padding:10px 14px;">
             <span>${i.name}</span><span style="font-weight:600;">${i.days}天后</span>
