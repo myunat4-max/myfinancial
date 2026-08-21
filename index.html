@@ -123,9 +123,13 @@
 <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="App.handleCsvFile(event)" />
 
 <script>
-/* ====== 配置:替换成你自己的 Supabase 项目信息 ====== */
-const SUPABASE_URL = "dzxzgrfxtnzhqfgnyemh";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
+/* ====== 配置 ======
+   URL 已经写死,不用再改。anon key 请在应用内"数据库设置"里填(点身份栏的下拉菜单),
+   会存在这台设备的浏览器里,不需要改这个文件、不需要重新部署。
+   如果你就是想直接写死在代码里也行,把下面 SUPABASE_ANON_KEY 换成真实值即可,
+   应用内设置的值优先级更高,会覆盖这里的默认值。 */
+const SUPABASE_URL = "https://dzxzgrfxtnzhqfgnyemh.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 /* ================================================== */
 
 function resolveSupabaseUrl(raw){
@@ -136,10 +140,23 @@ function resolveSupabaseUrl(raw){
   if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
   return v;
 }
-const APP_VERSION = "2026-08-20-v17";
+const APP_VERSION = "2026-08-20-v21";
 console.log("净值追踪 版本:", APP_VERSION);
-const RESOLVED_SUPABASE_URL = resolveSupabaseUrl(SUPABASE_URL);
-const sb = (RESOLVED_SUPABASE_URL.startsWith("http")) ? supabase.createClient(RESOLVED_SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+function readStoredSupabaseConfig(){
+  try {
+    return {
+      url: localStorage.getItem("wealth-supabase-url") || "",
+      key: localStorage.getItem("wealth-supabase-key") || "",
+    };
+  } catch(e){ return {url:"", key:""}; }
+}
+const STORED_DB_CONFIG = readStoredSupabaseConfig();
+const EFFECTIVE_SUPABASE_URL = STORED_DB_CONFIG.url || SUPABASE_URL;
+const EFFECTIVE_SUPABASE_KEY = STORED_DB_CONFIG.key || SUPABASE_ANON_KEY;
+const RESOLVED_SUPABASE_URL = resolveSupabaseUrl(EFFECTIVE_SUPABASE_URL);
+const sb = (RESOLVED_SUPABASE_URL.startsWith("http") && EFFECTIVE_SUPABASE_KEY && EFFECTIVE_SUPABASE_KEY !== "YOUR_SUPABASE_ANON_KEY")
+  ? supabase.createClient(RESOLVED_SUPABASE_URL, EFFECTIVE_SUPABASE_KEY) : null;
 
 const fmt = n => Math.round(n || 0).toLocaleString("zh-CN");
 const todayStr = () => new Date().toISOString().slice(0,10);
@@ -235,6 +252,7 @@ const INSTALLMENT_SCHEMA = [
   {key:"method", label:"还款方式", type:"select", options:METHOD_OPTIONS},
   {key:"monthlyPayment", label:"月还款(元)", type:"number"},
   {key:"remainingTermsAtBase", label:"基准日剩余期数", type:"number"},
+  {key:"freesLimit", label:"分期后额度是否恢复(勾选=恢复,这笔不占用总额度)", type:"checkbox"},
 ];
 const CARD_SCHEMA = [
   {key:"name", label:"银行/平台", type:"text"},
@@ -321,6 +339,7 @@ const App = {
   dbError: null,
   lastSaveOk: null,
   identityMenuOpen: false,
+  dbSettingsOpen: false,
   dashboardSubTab: "upcoming",
   debtsExpanded: false,
   aiAdvice: null,
@@ -344,7 +363,7 @@ const App = {
       }
     } else {
       this.dbConnected = false;
-      this.dbError = "当前页面读到的 SUPABASE_URL 原始值 = \"" + SUPABASE_URL + "\",无法解析成有效网址。请确认已填成完整的 https://xxxx.supabase.co 或至少是项目ID本身。";
+      this.dbError = "还没有填 anon key。点顶部身份栏的下拉菜单 → 数据库设置,把你 Supabase 项目的 anon key 粘进去保存就行,不用改代码。";
       this.data = seedData();
     }
     if (!this.data.income) this.data.income = [];
@@ -424,6 +443,15 @@ const App = {
     const cardInstallTotal = this.data.cards.filter(matches).reduce((s,c)=>s+c.installments.reduce((s2,i)=>s2+computeRemaining(i,today),0),0);
     const cardBillTotal = this.data.cards.filter(matches).reduce((s,c)=>s+(Number(c.currentBillManual)||0),0);
     const cardLimitTotal = this.data.cards.filter(matches).reduce((s,c)=>s+(Number(c.totalLimit)||0),0);
+    // 已用额度:每一笔分期是否占用额度,由这笔分期自己的设置决定(同一张卡不同笔分期可能不一样)
+    const cardUsedLimit = this.data.cards.filter(matches).reduce((s,c)=>{
+      const billS = Number(c.currentBillManual)||0;
+      const instOccupying = c.installments.reduce((s2,i)=>{
+        const restores = i.freesLimit !== false; // 默认恢复(未设置也按恢复算,更符合当下常见规则)
+        return s2 + (restores ? 0 : computeRemaining(i,today));
+      }, 0);
+      return s + billS + instOccupying;
+    }, 0);
     const totalLiabilities = loanTotal+cardInstallTotal+cardBillTotal;
     const assetTotal = this.data.assets.filter(matches).reduce((s,a)=>s+(Number(a.currentValue)||0),0);
     const insAssetTotal = this.data.insurance.filter(i=>i.type==="savings"&&i.includeInNetWorth&&matches(i)).reduce((s,i)=>s+(Number(i.cashValue)||0),0);
@@ -432,7 +460,7 @@ const App = {
     const loanMonthly = this.data.loans.filter(l=>l.status!=="paid"&&matches(l)).reduce((s,l)=>s+(Number(l.monthlyPayment)||0),0);
     const cardMonthly = this.data.cards.filter(matches).reduce((s,c)=>s+c.installments.reduce((s2,i)=>s2+(Number(i.monthlyPayment)||0),0),0);
     const incomeMonthly = (this.data.income||[]).filter(matches).reduce((s,i)=>s+((Number(i.amount)||0)/(i.frequency==="annual"?12:1)),0);
-    return {loanTotal,cardInstallTotal,cardBillTotal,cardLimitTotal,totalLiabilities,assetTotal,insAssetTotal,totalAssets,netWorth,loanMonthly,cardMonthly,incomeMonthly};
+    return {loanTotal,cardInstallTotal,cardBillTotal,cardLimitTotal,cardUsedLimit,totalLiabilities,assetTotal,insAssetTotal,totalAssets,netWorth,loanMonthly,cardMonthly,incomeMonthly};
   },
 
   async saveSnapshot(){
@@ -784,13 +812,52 @@ const App = {
             <div class="identity-popover" onclick="event.stopPropagation()">
               ${other ? `<div onclick="App.setCurrentUser('${other}')">切换为 ${otherEmoji} ${other}</div>` : ""}
               <div onclick="App.editFamilyMembers()">✏️ 修改两人昵称</div>
+              <div onclick="App.toggleDbSettings(event)">🔧 数据库设置 ${this.dbConnected?'<span style="color:var(--spring-ink);">●已连接</span>':'<span style="color:#c9784a;">●未连接</span>'}</div>
             </div>` : ""}
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           ${importBtn}
           <div class="identity-networth">我的净值 <b style="color:${personalNetWorth>=0?'var(--positive)':'var(--negative)'};">${personalNetWorth>=0?'':'-'}¥${fmt(Math.abs(personalNetWorth))}</b></div>
         </div>
+      </div>
+      ${this.dbSettingsOpen ? this.renderDbSettingsPanel() : ""}`;
+  },
+
+  renderDbSettingsPanel(){
+    const curUrl = STORED_DB_CONFIG.url || SUPABASE_URL;
+    const curKey = STORED_DB_CONFIG.key && STORED_DB_CONFIG.key !== "YOUR_SUPABASE_ANON_KEY" ? STORED_DB_CONFIG.key : "";
+    return `
+      <div class="form-card">
+        <div class="subtitle" style="color:#999999;margin-bottom:10px;">这两项存在这台设备的浏览器里,不用改代码、不用重新部署。URL 一般不用动,只需要填 anon key(在 Supabase 后台 Settings → API 里找)。</div>
+        <div class="form-grid">
+          <label class="field"><span>Supabase URL</span><input type="text" id="dbset_url" value="${curUrl}"/></label>
+          <label class="field"><span>anon key</span><input type="text" id="dbset_key" value="${curKey}" placeholder="粘贴 anon key"/></label>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="App.saveDbSettings()">💾 保存并重新连接</button>
+          <button class="btn-ghost" onclick="App.clearDbSettings()">清除本机设置</button>
+          <button class="btn-ghost" onclick="App.toggleDbSettings()">取消</button>
+        </div>
       </div>`;
+  },
+
+  toggleDbSettings(ev){ if(ev) ev.stopPropagation(); this.dbSettingsOpen = !this.dbSettingsOpen; this.identityMenuOpen=false; this.render(); },
+  saveDbSettings(){
+    const url = (document.getElementById("dbset_url")?.value || "").trim();
+    const key = (document.getElementById("dbset_key")?.value || "").trim();
+    if (!key){ alert("anon key 不能为空"); return; }
+    try {
+      localStorage.setItem("wealth-supabase-url", url);
+      localStorage.setItem("wealth-supabase-key", key);
+    } catch(e){ alert("保存失败:" + e.message); return; }
+    location.reload();
+  },
+  clearDbSettings(){
+    try {
+      localStorage.removeItem("wealth-supabase-url");
+      localStorage.removeItem("wealth-supabase-key");
+    } catch(e){}
+    location.reload();
   },
 
   // ---------- render ----------
@@ -912,7 +979,7 @@ const App = {
     const insReminders = this.data.insurance.filter(i=>i.status==="active"&&i.paymentDate)
       .map(i=>({...i, days:daysUntilNext(i.paymentDate)})).sort((a,b)=>a.days-b.days);
     const totalMonthly = t.loanMonthly + t.cardMonthly;
-    const cardUsed = t.cardInstallTotal + t.cardBillTotal;
+    const cardUsed = t.cardUsedLimit;
     const cardAvailable = t.cardLimitTotal - cardUsed;
     const otherPerson = this.data.familyMembers.find(n=>n!==this.currentUser);
 
@@ -1137,7 +1204,7 @@ const App = {
               return `<div class="bill-row">
                 <div class="bill-left">
                   <div class="bill-title">${i.label}</div>
-                  <div class="bill-sub">利率 ${i.rate}%${i.originalPrincipal && i.totalTerms ? ` · 进度${Math.round((1-bal/Number(i.originalPrincipal))*100)}%` : ""}</div>
+                  <div class="bill-sub">利率 ${i.rate}%${i.originalPrincipal && i.totalTerms ? ` · 进度${Math.round((1-bal/Number(i.originalPrincipal))*100)}%` : ""}${i.freesLimit===false ? ` · 占额度` : ""}</div>
                 </div>
                 <div class="bill-right">
                   <div class="bill-amount">¥${fmt(i.monthlyPayment)}<span style="font-size:11px;font-weight:400;">/月</span></div>
@@ -1152,9 +1219,9 @@ const App = {
             }).join("")}
           </div>`;
         }
-        const addInstallForm = (this.openForm && this.openForm.kind==="installment" && this.openForm.mode==="add" && this.openForm.cardId===c.id) ? this.renderFormInner() : `<button class="btn-ghost" style="margin-top:10px;" onclick="App.openAddForm('installment', INSTALLMENT_SCHEMA, {method:'equal_installment', baseDate: todayStr()}, '${c.id}')">➕ 添加分期明细</button>`;
+        const addInstallForm = (this.openForm && this.openForm.kind==="installment" && this.openForm.mode==="add" && this.openForm.cardId===c.id) ? this.renderFormInner() : `<button class="btn-ghost" style="margin-top:10px;" onclick="App.openAddForm('installment', INSTALLMENT_SCHEMA, {method:'equal_installment', baseDate: todayStr(), freesLimit:true}, '${c.id}')">➕ 添加分期明细</button>`;
 
-        return `<div class="card">
+        return `<div class="bill-card" style="padding:14px 16px;">
           <div class="row-between" style="align-items:center;">
             <div style="font-weight:700;font-size:15px;">${this.ownerEmoji(c.owner||"共同")} ${c.name}${c.last4?` <span style="font-size:12px;font-weight:400;color:var(--ink-faint);">尾号${c.last4}</span>`:""}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -1172,7 +1239,7 @@ const App = {
             <button class="icon-btn" onclick="App.toggleCardExpand('${c.id}')" style="align-self:center;">${expanded?"收起 ▲":"展开 ▼"}</button>
           </div>
           ${expanded ? `
-          <div style="margin-top:12px;padding-top:12px;">
+          <div style="margin-top:12px;background:var(--card);border-radius:12px;padding:12px 14px;">
             ${c.billDate ? `<div class="bill-sub" style="margin-bottom:8px;">账单日:每月${c.billDate}号出账单</div>` : ""}
             <div class="row-between">
               <span style="font-size:13px;">当期账单/未分期欠款:</span>
