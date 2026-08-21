@@ -140,7 +140,7 @@ function resolveSupabaseUrl(raw){
   if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
   return v;
 }
-const APP_VERSION = "2026-08-20-v21";
+const APP_VERSION = "2026-08-20-v22";
 console.log("净值追踪 版本:", APP_VERSION);
 
 function readStoredSupabaseConfig(){
@@ -350,7 +350,9 @@ const App = {
   async init(){
     if (sb){
       try {
-        const { data: rows, error } = await sb.from("wealth_data").select("*").eq("id", 1).maybeSingle();
+        const timeout = new Promise((_, reject) => setTimeout(()=>reject(new Error("请求超时(8秒),可能是网络问题或 anon key 不对")), 8000));
+        const fetchPromise = sb.from("wealth_data").select("*").eq("id", 1).maybeSingle();
+        const { data: rows, error } = await Promise.race([fetchPromise, timeout]);
         if (error) throw error;
         this.dbConnected = true;
         if (rows && rows.payload) this.data = rows.payload;
@@ -1408,7 +1410,11 @@ document.addEventListener("click", function(){
   }
 });
 
-App.init();
+App.init().catch(function(e){
+  console.error("初始化异常", e);
+  var root = document.getElementById("root");
+  if (root) root.innerHTML = '<div class="loading">加载出错了:' + (e && e.message || e) + '<br><br>刷新页面重试一下,如果一直这样告诉我这行报错文字</div>';
+});
 </script>
 </body>
 </html>
