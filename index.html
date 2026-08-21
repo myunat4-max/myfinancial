@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="净值记账" />
 <meta name="theme-color" content="#9EB995" />
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap');
@@ -124,12 +124,11 @@
 
 <script>
 /* ====== 配置 ======
-   URL 已经写死,不用再改。anon key 请在应用内"数据库设置"里填(点身份栏的下拉菜单),
-   会存在这台设备的浏览器里,不需要改这个文件、不需要重新部署。
-   如果你就是想直接写死在代码里也行,把下面 SUPABASE_ANON_KEY 换成真实值即可,
-   应用内设置的值优先级更高,会覆盖这里的默认值。 */
+   URL 和 anon key 都已经写死,所有设备打开直接能用,不用再逐台设置。
+   身份栏下拉菜单里的"数据库设置"仍然保留,如果哪天要换 Supabase 项目,
+   可以在那里覆盖,或者直接改这里两行。 */
 const SUPABASE_URL = "https://dzxzgrfxtnzhqfgnyemh.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eHpncmZ4dG56aHFmZ255ZW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMjk4NjAsImV4cCI6MjEwMjcwNTg2MH0.MRmqsGuRyjQe17Jtg1jSg6EpkJ1hxWL9qadzpdLH-M8";
 /* ================================================== */
 
 function resolveSupabaseUrl(raw){
@@ -140,7 +139,7 @@ function resolveSupabaseUrl(raw){
   if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
   return v;
 }
-const APP_VERSION = "2026-08-20-v22";
+const APP_VERSION = "2026-08-20-v25";
 console.log("净值追踪 版本:", APP_VERSION);
 
 function readStoredSupabaseConfig(){
@@ -155,8 +154,22 @@ const STORED_DB_CONFIG = readStoredSupabaseConfig();
 const EFFECTIVE_SUPABASE_URL = STORED_DB_CONFIG.url || SUPABASE_URL;
 const EFFECTIVE_SUPABASE_KEY = STORED_DB_CONFIG.key || SUPABASE_ANON_KEY;
 const RESOLVED_SUPABASE_URL = resolveSupabaseUrl(EFFECTIVE_SUPABASE_URL);
-const sb = (RESOLVED_SUPABASE_URL.startsWith("http") && EFFECTIVE_SUPABASE_KEY && EFFECTIVE_SUPABASE_KEY !== "YOUR_SUPABASE_ANON_KEY")
-  ? supabase.createClient(RESOLVED_SUPABASE_URL, EFFECTIVE_SUPABASE_KEY) : null;
+let sb = null;
+let SUPABASE_LIB_MISSING = false;
+try {
+  const hasValidConfig = RESOLVED_SUPABASE_URL.startsWith("http") && EFFECTIVE_SUPABASE_KEY && EFFECTIVE_SUPABASE_KEY !== "YOUR_SUPABASE_ANON_KEY";
+  if (hasValidConfig) {
+    if (typeof supabase === "undefined") {
+      SUPABASE_LIB_MISSING = true;
+      console.error("Supabase 客户端库没有加载成功(CDN 可能被拦截或网络问题)");
+    } else {
+      sb = supabase.createClient(RESOLVED_SUPABASE_URL, EFFECTIVE_SUPABASE_KEY);
+    }
+  }
+} catch(e) {
+  console.error("创建 Supabase 客户端失败", e);
+  SUPABASE_LIB_MISSING = true;
+}
 
 const fmt = n => Math.round(n || 0).toLocaleString("zh-CN");
 const todayStr = () => new Date().toISOString().slice(0,10);
@@ -193,6 +206,21 @@ function daysUntilNext(monthDay){
   let next = new Date(now.getFullYear(), m-1, d);
   if (next < now) next = new Date(now.getFullYear()+1, m-1, d);
   return Math.ceil((next-now)/86400000);
+}
+function stringifyError(e){
+  if (!e) return "未知错误";
+  if (typeof e === "string") return e;
+  if (e instanceof Error) return e.message;
+  if (typeof e === "object") {
+    const parts = [];
+    if (e.message) parts.push(e.message);
+    if (e.details) parts.push(e.details);
+    if (e.hint) parts.push(e.hint);
+    if (e.code) parts.push("code:" + e.code);
+    if (parts.length) return parts.join(" | ");
+    try { return JSON.stringify(e); } catch(_) { return String(e); }
+  }
+  return String(e);
 }
 function daysUntilDueDay(dueDay){
   if (!dueDay) return 9999; // 日期待定的排最后
@@ -360,12 +388,14 @@ const App = {
       } catch(e){
         console.error("Supabase 读取失败,本次修改不会保存", e);
         this.dbConnected = false;
-        this.dbError = ((e && e.message) || String(e)) + " | 实际连接的地址 = " + RESOLVED_SUPABASE_URL;
+        this.dbError = stringifyError(e) + " | 实际连接的地址 = " + RESOLVED_SUPABASE_URL;
         this.data = seedData();
       }
     } else {
       this.dbConnected = false;
-      this.dbError = "还没有填 anon key。点顶部身份栏的下拉菜单 → 数据库设置,把你 Supabase 项目的 anon key 粘进去保存就行,不用改代码。";
+      this.dbError = SUPABASE_LIB_MISSING
+        ? "Supabase 的脚本库没有加载成功,可能是网络问题或 CDN 被拦截,刷新页面重试一下"
+        : "还没有填 anon key。点顶部身份栏的下拉菜单 → 数据库设置,把你 Supabase 项目的 anon key 粘进去保存就行,不用改代码。";
       this.data = seedData();
     }
     if (!this.data.income) this.data.income = [];
@@ -418,7 +448,7 @@ const App = {
     } catch(e){
       console.error("保存失败", e);
       this.lastSaveOk = false;
-      this.showSaveToast("✗ 保存失败: " + ((e&&e.message)||"未知错误") + "(修改暂时只在本页面生效,刷新会丢失)");
+      this.showSaveToast("✗ 保存失败: " + stringifyError(e) + "(修改暂时只在本页面生效,刷新会丢失)");
       return false;
     }
   },
@@ -851,7 +881,7 @@ const App = {
     try {
       localStorage.setItem("wealth-supabase-url", url);
       localStorage.setItem("wealth-supabase-key", key);
-    } catch(e){ alert("保存失败:" + e.message); return; }
+    } catch(e){ alert("保存失败:" + stringifyError(e)); return; }
     location.reload();
   },
   clearDbSettings(){
@@ -960,7 +990,7 @@ const App = {
       const data = await res.json();
       this.aiAdvice = data.advice || data.error || "生成失败,请稍后重试。";
     } catch(e){
-      this.aiAdvice = "请求失败:" + e.message + "(检查是否已部署 Netlify Function 并配置 DEEPSEEK_API_KEY)";
+      this.aiAdvice = "请求失败:" + stringifyError(e) + "(检查是否已部署 Netlify Function 并配置 DEEPSEEK_API_KEY)";
     }
     this.aiLoading = false;
     this.render();
@@ -1413,7 +1443,7 @@ document.addEventListener("click", function(){
 App.init().catch(function(e){
   console.error("初始化异常", e);
   var root = document.getElementById("root");
-  if (root) root.innerHTML = '<div class="loading">加载出错了:' + (e && e.message || e) + '<br><br>刷新页面重试一下,如果一直这样告诉我这行报错文字</div>';
+  if (root) root.innerHTML = '<div class="loading">加载出错了:' + stringifyError(e) + '<br><br>刷新页面重试一下,如果一直这样告诉我这行报错文字</div>';
 });
 </script>
 </body>
