@@ -139,7 +139,7 @@ function resolveSupabaseUrl(raw){
   if (/^[a-z0-9]+$/i.test(v)) return `https://${v}.supabase.co`;
   return v;
 }
-const APP_VERSION = "2026-08-20-v26";
+const APP_VERSION = "2026-08-20-v28";
 console.log("净值追踪 版本:", APP_VERSION);
 
 function readStoredSupabaseConfig(){
@@ -206,6 +206,12 @@ function daysUntilNext(monthDay){
   let next = new Date(now.getFullYear(), m-1, d);
   if (next < now) next = new Date(now.getFullYear()+1, m-1, d);
   return Math.ceil((next-now)/86400000);
+}
+function cardOtherBill(c){
+  // 本期账单总额 - 这期分期要还的部分 = 剩下的其他欠款(不重复算分期)
+  const instMonthly = (c.installments||[]).reduce((s,i)=>s+(Number(i.monthlyPayment)||0),0);
+  const bill = Number(c.currentBillManual)||0;
+  return Math.max(0, bill - instMonthly);
 }
 function stringifyError(e){
   if (!e) return "未知错误";
@@ -286,7 +292,7 @@ const CARD_SCHEMA = [
   {key:"name", label:"银行/平台", type:"text"},
   {key:"last4", label:"卡号后四位(选填)", type:"text", placeholder:"如 8888"},
   {key:"totalLimit", label:"总额度(元)", type:"number"},
-  {key:"currentBillManual", label:"当期账单/未分期欠款(元)", type:"number"},
+  {key:"currentBillManual", label:"本期账单总额(元)——直接抄账单/APP上写的这期应还总额,含分期部分也没关系,系统会自动扣掉分期避免重复算", type:"number"},
   {key:"billDate", label:"账单日(几号,选填)", type:"number"},
   {key:"dueDay", label:"还款日(几号)", type:"number"},
   {key:"note", label:"备注", type:"text"},
@@ -473,11 +479,11 @@ const App = {
     const matches = (item) => !ownerFilter || ownerFilter==="全部" || (item.owner||"共同")===ownerFilter;
     const loanTotal = this.data.loans.filter(l=>l.status!=="paid" && matches(l)).reduce((s,l)=>s+computeRemaining(l,today),0);
     const cardInstallTotal = this.data.cards.filter(matches).reduce((s,c)=>s+c.installments.reduce((s2,i)=>s2+computeRemaining(i,today),0),0);
-    const cardBillTotal = this.data.cards.filter(matches).reduce((s,c)=>s+(Number(c.currentBillManual)||0),0);
+    const cardBillTotal = this.data.cards.filter(matches).reduce((s,c)=>s+cardOtherBill(c),0);
     const cardLimitTotal = this.data.cards.filter(matches).reduce((s,c)=>s+(Number(c.totalLimit)||0),0);
     // 已用额度:每一笔分期是否占用额度,由这笔分期自己的设置决定(同一张卡不同笔分期可能不一样)
     const cardUsedLimit = this.data.cards.filter(matches).reduce((s,c)=>{
-      const billS = Number(c.currentBillManual)||0;
+      const billS = cardOtherBill(c);
       const instOccupying = c.installments.reduce((s2,i)=>{
         const restores = i.freesLimit !== false; // 默认恢复(未设置也按恢复算,更符合当下常见规则)
         return s2 + (restores ? 0 : computeRemaining(i,today));
@@ -960,8 +966,9 @@ const App = {
         const k = countPeriodsPassed(i.baseDate, c.dueDay, today);
         rows.push({name:`${c.name}·${i.label}`, owner:c.owner||"共同", rate:i.rate, remaining:computeRemaining(i,today), monthlyPayment:i.monthlyPayment, dueDay:c.dueDay, termsLeft: Math.max(0, n-Math.min(k,n))});
       });
-      if (Number(c.currentBillManual)>0){
-        rows.push({name:`${c.name}·当期账单`, owner:c.owner||"共同", rate:null, remaining:Number(c.currentBillManual), monthlyPayment:0, dueDay:c.dueDay, termsLeft:null});
+      const otherBill = cardOtherBill(c);
+      if (otherBill>0){
+        rows.push({name:`${c.name}·其他欠款(不含分期)`, owner:c.owner||"共同", rate:null, remaining:otherBill, monthlyPayment:0, dueDay:c.dueDay, termsLeft:null});
       }
     });
     const by = sortBy || this.debtSort || "term";
@@ -1002,9 +1009,16 @@ const App = {
     this.data.loans.filter(l=>l.status!=="paid").forEach(l=>upcoming.push({key:`loan_${l.id}`, name:l.name, dueDay:l.dueDay, amount:l.monthlyPayment, owner:l.owner||"共同", checkable:false}));
     this.data.cards.forEach(c=>{
       const instS = c.installments.reduce((s2,i)=>s2+(Number(i.monthlyPayment)||0),0);
-      const billS = Number(c.currentBillManual)||0;
-      if (instS>0) upcoming.push({key:`cardinst_${c.id}`, name:`${c.name}·分期`, dueDay:c.dueDay, amount:instS, owner:c.owner||"共同", checkable:false});
-      if (billS>0) upcoming.push({key:`cardbill_${c.id}`, name:`${c.name}·当期账单`, dueDay:c.dueDay, amount:billS, owner:c.owner||"共同", checkable:true, cardId:c.id, checked:!!c.billChecked});
+      const billRaw = Number(c.currentBillManual)||0;
+      const amount = Math.max(billRaw, instS); // 账单总额理论上已含分期;如果账单还没更新,至少不漏掉分期这部分
+      const otherPart = Math.max(0, billRaw - instS);
+      if (amount>0) {
+        upcoming.push({
+          key:`card_${c.id}`, name:c.name, dueDay:c.dueDay, amount, owner:c.owner||"共同",
+          checkable:true, cardId:c.id, checked:!!c.billChecked,
+          sub: instS>0 ? `含分期¥${fmt(instS)}${otherPart>0?` + 其他¥${fmt(otherPart)}`:""}` : "",
+        });
+      }
     });
     upcoming.forEach(u=>{ u.daysLeft = daysUntilDueDay(u.dueDay); });
     upcoming.sort((a,b)=>a.daysLeft-b.daysLeft);
@@ -1032,7 +1046,7 @@ const App = {
         return u.owner===this.currentUser || u.owner==="共同"; // mine
       });
       subBody = `
-        <div class="subtitle" style="color:#999999;margin-bottom:8px;">按实际到期天数排序;贷款和信用卡分期是系统自动推算的,不用打勾;信用卡当期账单是手动填的数字,还完了可以打勾提醒自己,不会影响任何计算</div>
+        <div class="subtitle" style="color:#999999;margin-bottom:8px;">按实际到期天数排序;贷款自动推算,不用打勾。每张信用卡合并成一行(本期账单总额,已自动扣掉分期部分不重复算),还完了可以打勾提醒自己,不影响任何计算</div>
         <div class="wavetabs">
           <span class="wavetab ${filter==='mine'?'active':''}" onclick="App.setUpcomingFilter('mine')">
             <span>${this.ownerEmoji(this.currentUser)} 我的+共同</span>
@@ -1055,7 +1069,7 @@ const App = {
               ${filtered.map(u=>`<tr style="${u.checked?'opacity:0.5;':''}">
                 <td style="text-align:center;">${this.ownerEmoji(u.owner)}</td>
                 <td style="text-align:center;">${u.dueDay?u.dueDay+'号':'待定'}<div style="font-size:11px;color:#999999;">${u.daysLeft===0?'今天':u.daysLeft+'天后'}</div></td>
-                <td style="text-align:center;${u.checked?'text-decoration:line-through;':''}">${u.name}</td>
+                <td style="text-align:center;${u.checked?'text-decoration:line-through;':''}">${u.name}${u.sub?`<div style="font-size:10px;color:#999999;text-decoration:none;">${u.sub}</div>`:""}</td>
                 <td style="text-align:center;font-weight:700;">¥${fmt(u.amount)}</td>
                 <td style="text-align:center;">${u.checkable ? `<input type="checkbox" ${u.checked?'checked':''} onchange="App.toggleBillChecked('${u.cardId}')" style="width:18px;height:18px;cursor:pointer;"/>` : `<span style="color:#999999;font-size:11px;">自动</span>`}</td>
               </tr>`).join("")}
@@ -1220,7 +1234,8 @@ const App = {
           return `<div class="card">${this.renderFormInner()}</div>`;
         }
         const installSum = c.installments.reduce((s,i)=>s+computeRemaining(i,today),0);
-        const cardTotal = installSum + (Number(c.currentBillManual)||0);
+        const cardOther = cardOtherBill(c);
+        const cardTotal = installSum + cardOther;
         const expanded = this.expandedCard===c.id;
         const billElId = `cardbill__${c.id}__null`;
 
@@ -1255,7 +1270,10 @@ const App = {
 
         return `<div class="bill-card" style="padding:14px 16px;">
           <div class="row-between" style="align-items:center;">
-            <div style="font-weight:700;font-size:15px;">${this.ownerEmoji(c.owner||"共同")} ${c.name}${c.last4?` <span style="font-size:12px;font-weight:400;color:var(--ink-faint);">尾号${c.last4}</span>`:""}</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="font-weight:700;font-size:15px;">${this.ownerEmoji(c.owner||"共同")} ${c.name}${c.last4?` <span style="font-size:12px;font-weight:400;color:var(--ink-faint);">尾号${c.last4}</span>`:""}</div>
+              <button class="icon-btn" onclick="App.toggleCardExpand('${c.id}')">${expanded?"收起 ▲":"展开 ▼"}</button>
+            </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
               ${this.canEdit(c) ? `
                 <button class="icon-btn" onclick='App.openEditForm("card", CARD_SCHEMA, ${JSON.stringify(c)})'>编辑</button>
@@ -1263,22 +1281,28 @@ const App = {
               ` : ""}
             </div>
           </div>
-          <div class="stat-strip" style="align-items:flex-end;">
+          <div class="stat-strip">
             <div><div class="ss-label">额度</div><div class="ss-value">¥${fmt(c.totalLimit)}</div></div>
             <div><div class="ss-label">还款日</div><div class="ss-value">${c.dueDay}号</div></div>
             <div><div class="ss-label">分期笔数</div><div class="ss-value">${c.installments.length}笔</div></div>
-            <div><div class="ss-label">合计欠款</div><div class="ss-value" style="color:var(--ink);font-size:16px;">¥${fmt(cardTotal)}</div><div style="font-size:10px;color:var(--ink-faint);margin-top:2px;">分期¥${fmt(installSum)}+账单¥${fmt(Number(c.currentBillManual)||0)}</div></div>
-            <button class="icon-btn" onclick="App.toggleCardExpand('${c.id}')" style="align-self:center;">${expanded?"收起 ▲":"展开 ▼"}</button>
+          </div>
+          <div class="row-between" style="margin-top:14px;align-items:flex-start;">
+            <div style="font-size:13px;color:var(--ink-soft);">合计欠款</div>
+            <div style="text-align:right;">
+              <div style="font-size:20px;font-weight:700;color:var(--ink);">¥${fmt(cardTotal)}</div>
+              <div style="font-size:11px;color:var(--ink-faint);margin-top:2px;">分期¥${fmt(installSum)} + 其他¥${fmt(cardOther)}</div>
+            </div>
           </div>
           ${expanded ? `
           <div style="margin-top:12px;background:var(--card);border-radius:12px;padding:12px 14px;">
             ${c.billDate ? `<div class="bill-sub" style="margin-bottom:8px;">账单日:每月${c.billDate}号出账单</div>` : ""}
             <div class="row-between">
-              <span style="font-size:13px;">当期账单/未分期欠款:</span>
+              <span style="font-size:13px;">本期账单总额(含分期,抄账单数字就行):</span>
               <span style="display:flex;align-items:center;gap:8px;"><b>¥${fmt(c.currentBillManual)}</b>
                 ${this.canEdit(c) ? `<span id="${billElId}"><button class="icon-btn" onclick="App.toggleCalibrate('${billElId}', ${c.currentBillManual})">✏️</button></span>` : ""}
               </span>
             </div>
+            <div class="bill-sub" style="text-align:right;margin-top:2px;">系统已自动拆分:分期¥${fmt(installSum)} + 其他¥${fmt(cardOther)}</div>
             ${installList}
             ${this.canEdit(c) ? addInstallForm : ""}
           </div>` : ""}
